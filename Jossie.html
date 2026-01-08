@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exhibition Designer Portfolio | Immersive WebGL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* --- 基础 UI 样式 --- */
+        :root {
+            --accent: #00d2ff;
+            --bg-glass: rgba(20, 20, 20, 0.8);
+            --border-glass: 1px solid rgba(255,255,255,0.1);
+        }
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Montserrat', sans-serif; color: white; }
+        
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; outline: none; }
+
+        /* --- 导航栏 --- */
+        nav {
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%); z-index: 100;
+            display: flex; gap: 40px; background: rgba(0,0,0,0.6); padding: 15px 40px;
+            border-radius: 50px; backdrop-filter: blur(15px); border: var(--border-glass);
+        }
+        nav a {
+            color: #888; text-decoration: none; text-transform: uppercase; font-size: 11px; letter-spacing: 2px;
+            cursor: pointer; transition: 0.3s; font-weight: 500;
+        }
+        nav a:hover, nav a.active { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
+        /* --- 内容浮层 (HTML DOM) --- */
+        .content-section {
+            position: absolute; top: 50%; left: 15%; transform: translateY(-50%);
+            z-index: 10; pointer-events: none; /* 默认穿透 */
+            opacity: 0; visibility: hidden; transition: 0.8s ease;
+            width: 350px;
+        }
+        .content-section.active { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0); }
+        .content-section.hidden-left { transform: translateY(-50%) translateX(-30px); }
+        
+        /* 允许内容区域内的链接/按钮可点击 */
+        .content-section a, .content-section .event-item { pointer-events: auto; }
+
+        h1 { font-family: 'Playfair Display', serif; font-size: 4.5rem; margin: 0 0 20px; line-height: 0.9; font-weight: 400; }
+        h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: #fff; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        p { font-size: 0.9rem; line-height: 1.7; color: #bbb; margin-bottom: 20px; text-align: justify; }
+        
+        .highlight { color: var(--accent); }
+
+        /* --- News Event List Styles --- */
+        .event-list { list-style: none; padding: 0; margin: 0; }
+        .event-item {
+            display: flex; gap: 20px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s; cursor: pointer;
+        }
+        .event-item:hover { padding-left: 10px; border-bottom-color: var(--accent); }
+        .event-date { font-size: 0.8rem; color: var(--accent); font-weight: 700; width: 80px; flex-shrink: 0; padding-top: 3px; }
+        .event-info h4 { margin: 0 0 5px; font-size: 1rem; font-weight: 500; }
+        .event-info p { margin: 0; font-size: 0.8rem; color: #666; }
+
+        /* --- Project Detail Modal (点击画框后弹出) --- */
+        #project-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+            z-index: 200; display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: 0.5s;
+        }
+        #project-modal.open { opacity: 1; visibility: visible; }
+        
+        .modal-content {
+            background: #1a1a1a; width: 80%; max-width: 900px; height: 70vh;
+            display: grid; grid-template-columns: 1.2fr 0.8fr;
+            border: var(--border-glass); box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+        }
+        .modal-img { background: #333; background-size: cover; background-position: center; position: relative; }
+        .modal-text { padding: 60px; overflow-y: auto; }
+        .close-btn {
+            position: absolute; top: 30px; right: 40px; font-size: 2rem; color: white;
+            cursor: pointer; transition: 0.3s; z-index: 201;
+        }
+        .close-btn:hover { color: var(--accent); transform: rotate(90deg); }
+
+        /* Loading */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: #fff; letter-spacing: 5px;
+            font-size: 0.8rem; transition: opacity 1s;
+        }
+        
+        /* 鼠标提示 */
+        #cursor-tip {
+            position: fixed; pointer-events: none; z-index: 50; 
+            background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 4px;
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s;
+            transform: translate(15px, 15px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <p>LOADING SPACE</p>
+        <p style="font-size:10px; color:#444">INITIALIZING WEBGL...</p>
+    </div>
+
+    <div id="cursor-tip">CLICK TO VIEW</div>
+
+    <nav>
+        <a onclick="navigateTo('home')" class="active" id="nav-home">HOME</a>
+        <a onclick="navigateTo('portfolio')" id="nav-portfolio">PORTFOLIO</a>
+        <a onclick="navigateTo('news')" id="nav-news">NEWS</a>
+        <a onclick="navigateTo('about')" id="nav-about">ABOUT</a>
+    </nav>
+
+    <div id="project-modal">
+        <div class="close-btn" onclick="closeModal()">×</div>
+        <div class="modal-content">
+            <div class="modal-img" id="modal-img"></div>
+            <div class="modal-text">
+                <h2 id="modal-title" style="color:white; border:none; font-size:3rem; margin-bottom:10px;">Project Title</h2>
+                <p id="modal-cat" style="color:var(--accent); text-transform:uppercase; font-size:0.8rem; letter-spacing:2px;">Category</p>
+                <div style="width:50px; height:2px; background:white; margin: 30px 0;"></div>
+                <p id="modal-desc">Description goes here...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="sec-home" class="content-section active">
+        <h1>SPATIAL<br><span class="highlight">NARRATIVE</span></h1>
+        <p>Exploring the boundaries between physical exhibition and digital experience. I design spaces that tell stories.</p>
+        <div style="font-size: 0.7rem; color: #666; margin-top: 30px; letter-spacing: 2px;">SCROLL / DRAG TO EXPLORE</div>
+    </div>
+
+    <div id="sec-portfolio" class="content-section hidden-left" style="top:80%; left:50%; transform:translate(-50%, -50%); text-align: center; width: auto;">
+        <h2 style="border:none; margin:0; font-size:1.5rem;">SELECTED WORKS</h2>
+        <p style="text-align: center;">Click on the floating frames to view project details.</p>
+    </div>
+
+    <div id="sec-news" class="content-section hidden-left" style="left: auto; right: 10%; width: 400px;">
+        <h2>LATEST EVENTS</h2>
+        <div class="event-list">
+            <div class="event-item">
+                <div class="event-date">2025.11</div>
+                <div class="event-info">
+                    <h4>Venice Architecture Biennale</h4>
+                    <p>Curatorial Assistant for the China Pavilion.</p>
+                </div>
+            </div>
+            <div class="event-item">
+                <div class="event-date">2025.09</div>
+                <div class="event-info">
+                    <h4>"Future Material" Pop-up</h4>
+                    <p>Lead spatial designer for Shanghai Design Week.</p>
+                </div>
+            </div>
+            <div class="event-item">
+                <div class="event-date">2025.06</div>
+                <div class="event-info">
+                    <h4>Digital Art Museum Launch</h4>
+                    <p>Interactive installation design award winner.</p>
+                </div>
+            </div>
+            <div class="event-item">
+                <div class="event-date">2025.03</div>
+                <div class="event-info">
+                    <h4>Guest Lecture at HKU</h4>
+                    <p>Topic: "Immersive Tech in Traditional Exhibition".</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sec-about" class="content-section hidden-left" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px; text-align: center;">
+        <h2>THE ARCHITECT OF VOID</h2>
+        <p style="text-align: center; font-size: 1.1rem; color: #ddd;">
+            "I am an exhibition designer obsessed with the poetics of space. 
+            My work is not just about placing objects in a room, but choreographing the viewer's movement and emotion."
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; text-align: left;">
+            <div>
+                <h4 style="color:var(--accent); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">Philosophy</h4>
+                <p style="font-size:0.8rem;">I believe that exhibition design is a second language—a spatial syntax composed of light, material, and void that translates curatorial concepts into tangible experiences.</p>
+            </div>
+            <div>
+                <h4 style="color:var(--accent); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">Expertise</h4>
+                <p style="font-size:0.8rem;">Museum Planning, Interactive Installation, Commercial Pop-ups, 3D Visualization, Curatorial Strategy.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // --- 项目数据 (模拟数据库) ---
+        const projects = {
+            1: {
+                title: "Silent Echoes",
+                category: "Museum Exhibition",
+                desc: "A retrospective exhibition designed for the Modern Art Museum. The spatial layout utilizes sound-absorbing materials and directional lighting to create isolated 'sound pockets', allowing visitors to experience the auditory history of the city in silence. <br><br>The challenge was to visualize sound without overwhelming the visual senses.",
+                color: 0xff5555
+            },
+            2: {
+                title: "Urban Glitch",
+                category: "Commercial Pop-up",
+                desc: "A cyberpunk-themed pop-up store for a tech fashion brand. We used industrial scaffolding and programmed LED arrays to simulate a digital system crashing in real life. <br><br>The structure is modular and was reassembled in 3 different cities.",
+                color: 0x55ff55
+            },
+            3: {
+                title: "Void Structure",
+                category: "Art Installation",
+                desc: "An experimental installation exploring negative space. By suspending 5000 translucent threads, we carved out a geometric void in the center of the room that only becomes visible when viewers move around it.",
+                color: 0x5555ff
+            }
+        };
+
+        // --- 1. Three.js Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.FogExp2(0x0a0a0a, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+        scene.add(ambientLight);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 1.5);
+        spotLight.position.set(5, 15, 5);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.5;
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        // Blue Rim Light (Cyberpunk feel)
+        const rimLight = new THREE.PointLight(0x00d2ff, 0.8, 20);
+        rimLight.position.set(-5, 2, -10);
+        scene.add(rimLight);
+
+        // Floor
+        const planeGeo = new THREE.PlaneGeometry(200, 200);
+        const planeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.6 });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -3;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        // --- 3. Objects ---
+
+        // HOME: Abstract Sculpture
+        const homeGroup = new THREE.Group();
+        const geom = new THREE.IcosahedronGeometry(2, 0);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x222222, flatShading: true, metalness: 0.8, roughness: 0.1 });
+        const homeObj = new THREE.Mesh(geom, mat);
+        const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(geom), new THREE.LineBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.3 }));
+        homeObj.add(wireframe);
+        homeObj.castShadow = true;
+        homeGroup.add(homeObj);
+        scene.add(homeGroup);
+
+        // PORTFOLIO: Interactive Gallery
+        const portGroup = new THREE.Group();
+        portGroup.position.set(-15, 0, -5);
+        portGroup.rotation.y = Math.PI / 3;
+        scene.add(portGroup);
+
+        // Create clickable frames
+        const frames = [];
+        for(let i=0; i<3; i++) {
+            const frameGeo = new THREE.BoxGeometry(3.5, 5, 0.2);
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+            frame.position.set((i-1)*5, 0, 0);
+            frame.castShadow = true;
+            
+            // The "Canvas" part (what we click)
+            const canvasGeo = new THREE.PlaneGeometry(3, 4.5);
+            // In a real app, use textureLoader.load('image.jpg')
+            const canvasMat = new THREE.MeshStandardMaterial({ 
+                color: projects[i+1].color, 
+                emissive: projects[i+1].color,
+                emissiveIntensity: 0.2
+            });
+            const canvasMesh = new THREE.Mesh(canvasGeo, canvasMat);
+            canvasMesh.position.z = 0.11;
+            
+            // **关键：绑定数据到 3D 对象**
+            canvasMesh.userData = { id: i+1, isClickable: true };
+            
+            frame.add(canvasMesh);
+            portGroup.add(frame);
+            frames.push(canvasMesh); // Save for raycasting
+        }
+
+        // NEWS: Data Stream
+        const newsGroup = new THREE.Group();
+        newsGroup.position.set(15, 0, -5);
+        newsGroup.rotation.y = -Math.PI / 3;
+        
+        // Creating a "flow" of geometric shapes
+        for(let i=0; i<30; i++) {
+            const barGeo = new THREE.BoxGeometry(0.1, Math.random()*8, 0.1);
+            const barMat = new THREE.MeshBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.4 });
+            const bar = new THREE.Mesh(barGeo, barMat);
+            bar.position.set((Math.random()-0.5)*10, (Math.random()-0.5)*5, (Math.random()-0.5)*5);
+            newsGroup.add(bar);
+        }
+        scene.add(newsGroup);
+
+        // ABOUT: Mirror Monolith
+        const aboutGroup = new THREE.Group();
+        aboutGroup.position.set(0, 0, -25);
+        const monoGeo = new THREE.BoxGeometry(4, 8, 1);
+        const monoMat = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 1, roughness: 0 });
+        const monolith = new THREE.Mesh(monoGeo, monoMat);
+        aboutGroup.add(monolith);
+        scene.add(aboutGroup);
+
+
+        // --- 4. Navigation Logic ---
+        const views = {
+            home: { cam: {x:0, y:0, z:12}, look: {x:0, y:0, z:0} },
+            portfolio: { cam: {x:-10, y:0, z:5}, look: {x:-15, y:0, z:-5} },
+            news: { cam: {x:10, y:0, z:5}, look: {x:15, y:0, z:-5} },
+            about: { cam: {x:0, y:1, z:-15}, look: {x:0, y:0, z:-25} }
+        };
+
+        let currentSection = 'home';
+        camera.position.set(0, 0, 12);
+
+        function navigateTo(section) {
+            currentSection = section;
+            
+            // UI Updates
+            document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
+            document.getElementById(`nav-${section}`).classList.add('active');
+            
+            document.querySelectorAll('.content-section').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('hidden-left');
+            });
+            
+            setTimeout(() => {
+                const target = document.getElementById(`sec-${section}`);
+                target.classList.remove('hidden-left');
+                target.classList.add('active');
+            }, 600);
+
+            // Camera Animation
+            const view = views[section];
+            gsap.to(camera.position, {
+                x: view.cam.x, y: view.cam.y, z: view.cam.z,
+                duration: 2, ease: "power3.inOut"
+            });
+
+            // Custom LookAt Animation
+            const tempLookAt = { x: 0, y: 0, z: 0 }; // Simplified for demo
+            // In a full implementation, you'd interp the control target
+            const controlsTarget = new THREE.Vector3(view.look.x, view.look.y, view.look.z);
+            
+            // Since we aren't using OrbitControls lookAt target directly in the animation loop usually,
+            // we will simply tween a dummy object and update camera.lookAt in the loop
+            gsap.to(cameraTarget, {
+                x: view.look.x, y: view.look.y, z: view.look.z,
+                duration: 2, ease: "power3.inOut"
+            });
+        }
+
+        const cameraTarget = new THREE.Vector3(0,0,0);
+
+        // --- 5. Interaction (Raycaster) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const cursorTip = document.getElementById('cursor-tip');
+
+        // Mouse Move (for parallax + raycasting)
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Cursor Tip Logic
+            cursorTip.style.left = event.clientX + 'px';
+            cursorTip.style.top = event.clientY + 'px';
+
+            if (currentSection === 'portfolio') {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(frames);
+                if (intersects.length > 0) {
+                    document.body.style.cursor = 'pointer';
+                    cursorTip.style.opacity = 1;
+                    // Highlight effect
+                    gsap.to(intersects[0].object.scale, {x:1.05, y:1.05, duration:0.3});
+                } else {
+                    document.body.style.cursor = 'default';
+                    cursorTip.style.opacity = 0;
+                    // Reset scale
+                    frames.forEach(f => gsap.to(f.scale, {x:1, y:1, duration:0.3}));
+                }
+            } else {
+                cursorTip.style.opacity = 0;
+            }
+        });
+
+        // Click Event
+        window.addEventListener('click', () => {
+            if (currentSection !== 'portfolio') return;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(frames);
+
+            if (intersects.length > 0) {
+                const id = intersects[0].object.userData.id;
+                openModal(id);
+            }
+        });
+
+        // Modal Logic
+        function openModal(id) {
+            const data = projects[id];
+            document.getElementById('modal-title').innerText = data.title;
+            document.getElementById('modal-cat').innerText = data.category;
+            document.getElementById('modal-desc').innerHTML = data.desc; // Allow HTML
+            
+            // Set fake color background for demo (replace with image url in real usage)
+            const hexColor = '#' + new THREE.Color(data.color).getHexString();
+            document.getElementById('modal-img').style.backgroundColor = hexColor;
+            
+            document.getElementById('project-modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('project-modal').classList.remove('open');
+        }
+
+        // --- 6. Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Smooth LookAt
+            camera.lookAt(cameraTarget);
+
+            // Subtle Idling Animations
+            homeObj.rotation.y = time * 0.1;
+            homeObj.rotation.z = Math.sin(time * 0.5) * 0.1;
+
+            newsGroup.children.forEach((bar, i) => {
+                bar.scale.y = 1 + Math.sin(time * 2 + i) * 0.5;
+            });
+
+            // About monolith breathing
+            monolith.rotation.y = Math.sin(time * 0.2) * 0.1;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Init
+        setTimeout(() => {
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            animate();
+        }, 1000);
+
+    </script>
+</body>
+</html>

@@ -8,625 +8,728 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        /* --- 核心变量 --- */
+        /* --- 1. 核心视觉系统 --- */
         :root {
-            --accent: #00f2ff;
-            --accent-purple: #bd00ff;
-            --accent-gold: #ffd700;
+            --accent: #00f2ff;       /* 科技青 */
+            --accent-glow: rgba(0, 242, 255, 0.4);
+            --bg-dark: #050508;      /* 深空黑 */
+            --glass-panel: rgba(10, 10, 12, 0.75);
+            --border-light: rgba(255, 255, 255, 0.1);
             --text-main: #ffffff;
-            --text-muted: #b0b0b0;
-            --glass-bg: rgba(12, 12, 18, 0.75);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-            --glass-blur: blur(25px);
+            --text-muted: #8892b0;
         }
 
-        body { margin: 0; overflow: hidden; background-color: #020202; font-family: 'Inter', sans-serif; color: var(--text-main); }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
-
-        /* 滚动条 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
-        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-
-        /* --- 导航栏 --- */
-        nav {
-            position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 100;
-            display: flex; gap: 5px; padding: 10px 15px;
-            background: rgba(0,0,0,0.7); border-radius: 100px; 
-            border: var(--glass-border); backdrop-filter: blur(15px);
-            transition: all 0.3s ease; max-width: 95%; overflow-x: auto; scrollbar-width: none;
-        }
-        nav:hover { border-color: var(--accent); }
-        nav a {
-            color: var(--text-muted); text-decoration: none; text-transform: uppercase; 
-            font-size: 0.7rem; letter-spacing: 1px; font-weight: 600; 
-            cursor: pointer; transition: 0.3s; padding: 8px 16px; border-radius: 20px; white-space: nowrap;
-        }
-        nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
-        nav a.active { color: #000; background: var(--accent); font-weight: 800; }
-
-        /* --- 内容容器 --- */
-        .content-section {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: flex; flex-direction: column; justify-content: center;
-            opacity: 0; visibility: hidden; transition: opacity 0.6s ease, transform 0.6s ease;
-            z-index: 10; padding: 0 5%; box-sizing: border-box;
-        }
-        .content-section.active { opacity: 1; visibility: visible; transform: scale(1); }
-        .content-section.hidden { transform: scale(0.98); }
-
-        /* 通用玻璃面板 */
-        .glass-panel {
-            background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-            border: var(--glass-border); border-radius: 24px; padding: 40px;
-            pointer-events: auto; box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-            max-width: 800px; max-height: 85vh; overflow-y: auto;
-            transform: translateY(30px); opacity: 0; transition: all 0.5s ease 0.3s;
-        }
-        .content-section.active .glass-panel { transform: translateY(0); opacity: 1; }
-
-        /* --- 首页 Home (左右布局) --- */
-        #sec-home { align-items: center; justify-content: center; }
-        .home-container {
-            display: flex; align-items: center; gap: 60px; max-width: 1200px; width: 100%;
-            pointer-events: auto; /* 允许交互 */
-        }
-        .home-text { flex: 1; text-align: left; }
-        .home-img-box { flex-shrink: 0; position: relative; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        .home-img {
-            width: 320px; height: 320px; object-fit: cover;
-            border-radius: 30px; border: 2px solid rgba(255,255,255,0.1);
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.15);
-            transition: transform 0.3s ease;
+        body { 
+            background: var(--bg-dark); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; /* 隐藏 body 滚动条，由内部面板或JS接管 */
         }
-        .home-img:hover { transform: scale(1.02); border-color: var(--accent); }
 
-        h1 { 
-            font-size: 4rem; line-height: 1.1; margin: 0 0 15px; font-weight: 800; letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; outline: none; }
+
+        /* --- 2. 导航栏 (顶部悬浮) --- */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: 80px; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
         }
-        h2 { font-size: 1.8rem; margin-bottom: 20px; color: #fff; font-family: 'JetBrains Mono'; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .section-icon { color: var(--accent); font-size: 1.2rem; }
-        h3 { font-size: 1.1rem; color: var(--accent); margin: 25px 0 10px; font-family: 'JetBrains Mono'; border-left: 3px solid var(--accent); padding-left: 10px; }
-        p { font-size: 1rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 15px; text-align: justify; }
-
-        /* --- 聚合 Bio 样式 --- */
-        .bio-section-group { margin-bottom: 40px; }
-        .timeline-item {
-            position: relative; padding-left: 25px; margin-bottom: 20px; border-left: 2px solid rgba(255,255,255,0.1);
+        
+        .nav-inner {
+            pointer-events: auto;
+            display: flex; gap: 8px; padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 100px;
+            backdrop-filter: blur(10px);
         }
-        .timeline-item::before {
-            content: ''; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px;
-            background: var(--accent); border-radius: 50%;
+
+        .nav-btn {
+            background: transparent; border: none; color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+            padding: 8px 16px; border-radius: 20px; cursor: pointer;
+            transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px;
         }
-        .timeline-date { font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--accent); opacity: 0.8; }
-        .timeline-title { font-weight: 700; color: #fff; margin: 2px 0; }
-        .timeline-sub { font-size: 0.9rem; color: #888; }
+        .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .nav-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent-glow); }
 
-        .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .skill-item h4 { color: #fff; margin: 0 0 5px; font-size: 0.95rem; }
-        .skill-item ul { padding-left: 20px; margin: 0; font-size: 0.85rem; color: #aaa; }
+        /* --- 3. 内容布局框架 --- */
+        .page-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; transform: scale(0.95);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .page-container.active { 
+            opacity: 1; transform: scale(1); pointer-events: none; 
+        }
 
-        /* --- 其他板块位置微调 --- */
-        #sec-bio { align-items: flex-start; padding-left: 5%; } /* 左侧展示 */
-        #sec-projects { align-items: flex-end; padding-right: 5%; } /* 右侧展示 */
-        #sec-awards { align-items: flex-end; padding-right: 5%; }
-        #sec-pubs { align-items: center; justify-content: flex-start; padding-top: 100px; }
-        #sec-cv { align-items: center; text-align: center; }
+        /* 玻璃面板 */
+        .glass-panel {
+            pointer-events: auto; /* 允许面板内部的点击和滚动 */
+            background: var(--glass-panel);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 500px; 
+            max-width: 90%;
+            max-height: 85vh; /* 限制高度以允许内部滚动 */
+            overflow-y: auto; /* 关键：允许垂直滚动 */
+            position: absolute;
+            overscroll-behavior: contain; /* 防止滚动溢出触发页面级滚动 */
+        }
 
-        /* 标签 */
+        /* 滚动条美化 */
+        .glass-panel::-webkit-scrollbar { width: 4px; }
+        .glass-panel::-webkit-scrollbar-track { background: transparent; }
+        .glass-panel::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+        /* --- 4. 页面布局配置 --- */
+
+        /* HOME */
+        #page-home .home-content {
+            pointer-events: auto;
+            text-align: left; display: flex; align-items: center; gap: 40px;
+            background: rgba(0,0,0,0.6); padding: 40px; border-radius: 30px;
+            border: 1px solid var(--border-light); backdrop-filter: blur(10px);
+        }
+        #page-home img { width: 180px; height: 180px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
+
+        /* BIO: 左侧 */
+        #page-bio .glass-panel { left: 8%; top: 50%; transform: translateY(-50%); width: 550px; }
+
+        /* PROJECTS: 右侧 */
+        #page-projects .glass-panel { right: 8%; top: 50%; transform: translateY(-50%); }
+
+        /* SKILLS: 左侧 */
+        #page-skills .glass-panel { left: 8%; top: 50%; transform: translateY(-50%); width: 600px; }
+
+        /* PUBS: 居中 (无面板，只有3D) */
+        #page-pubs { flex-direction: column; justify-content: flex-start; padding-top: 100px; }
+        #page-pubs .header { pointer-events: auto; text-align: center; margin-bottom: 20px; }
+
+        /* AWARDS: 右侧 */
+        #page-awards .glass-panel { right: 8%; top: 50%; transform: translateY(-50%); }
+
+        /* CV: 居中 */
+        #page-cv .glass-panel { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+
+        /* --- 5. 文字排版 --- */
+        h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 10px; color: #fff; letter-spacing: -1px; }
+        h2 { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: '//'; opacity: 0.5; }
+        
+        h3 { font-size: 1.1rem; color: #fff; margin: 25px 0 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        p { font-size: 0.95rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 15px; }
+        
         .tag { 
-            padding: 4px 10px; border-radius: 4px; background: rgba(0,242,255,0.05);
-            border: 1px solid rgba(0,242,255,0.2); color: var(--accent); font-size: 0.75rem; 
-            font-family: 'JetBrains Mono'; display: inline-block; margin-right: 5px;
+            display: inline-block; padding: 4px 10px; margin: 0 5px 5px 0;
+            border: 1px solid var(--accent); color: var(--accent); 
+            font-family: 'JetBrains Mono'; font-size: 0.7rem; border-radius: 4px;
+            background: rgba(0, 242, 255, 0.05);
         }
 
-        /* 按钮 */
-        .contact-links a, .cv-btn {
-            display: inline-block; padding: 10px 25px; border-radius: 50px; text-decoration: none;
-            border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 0.9rem; font-weight: 600;
-            background: rgba(255,255,255,0.05); transition: 0.3s; margin-right: 10px;
+        .btn-primary {
+            display: inline-block; padding: 12px 30px; 
+            background: var(--accent); color: #000; font-weight: 700; 
+            text-decoration: none; border-radius: 50px; font-family: 'JetBrains Mono';
+            transition: 0.3s; margin-top: 10px;
         }
-        .contact-links a:hover, .cv-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
-        .cv-btn { padding: 15px 40px; margin-top: 20px; font-family: 'JetBrains Mono'; }
+        .btn-primary:hover { box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.05); }
 
-        /* --- Responsive --- */
-        @media (max-width: 900px) {
-            .home-container { flex-direction: column-reverse; text-align: center; gap: 30px; }
-            .home-text { text-align: center; }
-            .home-img { width: 200px; height: 200px; }
-            h1 { font-size: 3rem; }
-            .skills-grid { grid-template-columns: 1fr; }
-            #sec-bio, #sec-projects, #sec-awards { align-items: center; padding: 0 20px; }
-        }
+        /* Timeline Items */
+        .timeline-item { border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px; margin-bottom: 25px; position: relative; }
+        .timeline-item::before { content: ''; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
+        .timeline-item strong { color: #fff; display: block; margin-bottom: 2px; }
+        .date { font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--accent); display: block; margin-bottom: 4px; opacity: 0.9; }
 
-        /* Loader & Tooltip */
+        /* Loading */
         #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 999; display: flex; justify-content: center; align-items: center; 
-            color: var(--accent); font-family: 'JetBrains Mono'; letter-spacing: 4px; font-size: 0.8rem;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.8s;
         }
+        .loader-text { font-family: 'JetBrains Mono'; color: var(--accent); letter-spacing: 5px; margin-top: 20px; }
+        
+        /* Cursor Tip */
         #cursor-tip {
-            position: fixed; pointer-events: none; z-index: 200;
+            position: fixed; pointer-events: none; z-index: 200; opacity: 0;
             background: rgba(0,0,0,0.8); border: 1px solid var(--accent); color: var(--accent);
-            padding: 6px 12px; border-radius: 4px; font-size: 11px; font-family: 'JetBrains Mono';
-            opacity: 0; transition: opacity 0.2s; transform: translate(20px, 20px);
+            padding: 5px 10px; font-size: 10px; font-family: 'JetBrains Mono';
+            transform: translate(15px, 15px); transition: opacity 0.2s;
         }
-        #scroll-hint {
+        
+        /* Interaction Hint */
+        #interaction-hint {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 50;
             color: var(--accent); font-family: 'JetBrains Mono'; font-size: 0.7rem; letter-spacing: 2px;
-            opacity: 0; transition: opacity 0.5s; pointer-events: none; animation: bounce 2s infinite;
+            opacity: 0.7; pointer-events: none;
         }
-        @keyframes bounce { 0%, 100% {transform:translate(-50%, 0);} 50% {transform:translate(-50%, 10px);} }
     </style>
 </head>
 <body>
 
-    <div id="loader">INITIALIZING SYSTEM...</div>
-    <div id="cursor-tip">OPEN</div>
-    <div id="scroll-hint">SCROLL TO FLIP PAPERS</div>
+    <div id="loader">
+        <div style="width: 50px; height: 50px; border: 2px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <div class="loader-text">SYSTEM BOOT</div>
+    </div>
+    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+
+    <div id="cursor-tip">CLICK</div>
+    <div id="interaction-hint">HORIZONTAL SCROLL TO SWITCH PAGES</div>
 
     <nav>
-        <a onclick="navigateTo('home')" class="active" id="nav-home">HOME</a>
-        <a onclick="navigateTo('bio')" id="nav-bio">BIOGRAPHY</a>
-        <a onclick="navigateTo('projects')" id="nav-projects">PROJECTS</a>
-        <a onclick="navigateTo('pubs')" id="nav-pubs">PUBLICATIONS</a>
-        <a onclick="navigateTo('awards')" id="nav-awards">AWARDS</a>
-        <a onclick="navigateTo('cv')" id="nav-cv">CV</a>
+        <div class="nav-inner">
+            <button class="nav-btn active" onclick="switchScene('home')">Home</button>
+            <button class="nav-btn" onclick="switchScene('bio')">Bio</button>
+            <button class="nav-btn" onclick="switchScene('projects')">Projects</button>
+            <button class="nav-btn" onclick="switchScene('pubs')">Pubs</button>
+            <button class="nav-btn" onclick="switchScene('skills')">Skills</button>
+            <button class="nav-btn" onclick="switchScene('awards')">Awards</button>
+            <button class="nav-btn" onclick="switchScene('cv')">CV</button>
+        </div>
     </nav>
 
-    <div id="sec-home" class="content-section active">
-        <div class="home-container">
-            <div class="home-text">
-                <p style="font-family:'JetBrains Mono'; color:var(--accent); margin-bottom:10px; letter-spacing:2px;">// AI SCIENTIST</p>
-                <h1>FENG PAN <br><span style="font-size: 2.5rem; font-weight: 300;">潘丰</span></h1>
-                <h2 style="color:white; font-size:1.4rem; font-weight:400; border:none; margin-top:-10px;">
-                    Ph.D. Student @ HKBU &nbsp;<span style="color:#666">|</span>&nbsp; Visiting @ NTU
-                </h2>
-                <p style="font-size:1rem; max-width: 500px; color: #ccc; margin-bottom: 30px;">
-                    Standing at the forefront of <strong>Large Language Models</strong> and <strong>Autonomous Agents</strong> to revolutionize Biopharmaceuticals. 
-                    Building the next generation of "AI Scientists".
+    <div id="page-home" class="page-container active">
+        <div class="home-content">
+            <div style="flex: 1;">
+                <p style="color:var(--accent); font-family:'JetBrains Mono'; margin-bottom:10px;">// AI SCIENTIST</p>
+                <h1>FENG PAN <span style="font-weight:300; font-size:2.5rem;">潘丰</span></h1>
+                <p style="font-size: 1.2rem; color: #fff;">Ph.D. Student @ HKBU | Visiting @ NTU</p>
+                <p style="margin-top: 20px;">
+                    Revolutionizing <strong>Biopharmaceuticals</strong> with <strong>LLMs</strong> & <strong>Autonomous Agents</strong>.
                 </p>
-                <div class="contact-links">
-                    <a href="mailto:fengpan@comp.hkbu.edu.hk">Email</a>
-                    <a href="https://github.com/MagicPF" target="_blank">GitHub</a>
+                <div style="margin-top: 30px;">
+                    <a href="mailto:fengpan@comp.hkbu.edu.hk" class="btn-primary" style="margin-right:15px; background: transparent; border: 1px solid white; color: white;">EMAIL</a>
+                    <a href="https://github.com/MagicPF" target="_blank" class="btn-primary">GITHUB</a>
                 </div>
             </div>
-            <div class="home-img-box">
-                <img src="./image/FengPan.jpg" alt="Feng Pan" class="home-img" onerror="this.style.display='none'">
-            </div>
+            <img src="./image/FengPan.jpg" alt="Profile" onerror="this.style.display='none'">
         </div>
     </div>
 
-    <div id="sec-bio" class="content-section hidden">
-        <div class="glass-panel" style="width: 700px;">
-            <h2>BIOGRAPHY <span class="section-icon">01</span></h2>
-            
-            <div class="bio-section-group">
-                <p>
-                    I am a Ph.D. researcher at <strong>Hong Kong Baptist University (HKBU)</strong>, supervised by <strong>Prof. Pong Chi Yuen</strong>, and currently a Visiting Scholar at <strong>Nanyang Technological University (NTU)</strong>.
-                </p>
-                <p>
-                    My research bridges <strong>Generative AI</strong> and scientific reality. By integrating <strong>Geometric Deep Learning</strong> with <strong>Embodied Intelligence</strong>, I am developing closed-loop systems where AI agents not only design novel molecules but also perceive and interact with the physical world for verification. With a background as an <strong>AI Startup Founder</strong>, I possess the full-stack engineering capability.
-                </p>
-            </div>
-
-            <h3>EXPERIENCE & EDUCATION</h3>
-            <div class="bio-section-group">
-                <div class="timeline-item">
-                    <div class="timeline-date">Sept. 2025 - Present</div>
-                    <div class="timeline-title">Visiting Student</div>
-                    <div class="timeline-sub">Nanyang Technological University, Singapore</div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-date">Sept. 2022 - Present</div>
-                    <div class="timeline-title">Ph.D. Student</div>
-                    <div class="timeline-sub">Hong Kong Baptist University (HKBU)</div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-date">2023 - 2024</div>
-                    <div class="timeline-title">Founder / Entrepreneurial Experience</div>
-                    <div class="timeline-sub">Embodied AI Startup (R&D Focused)</div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-date">2017 - 2026</div>
-                    <div class="timeline-title">Director of STEAM Department</div>
-                    <div class="timeline-sub">Damuzhi Education Institution</div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-date">Sept. 2017 - June 2020</div>
-                    <div class="timeline-title">Bachelor in Computer Science</div>
-                    <div class="timeline-sub">Hong Kong Baptist University (HKBU)</div>
-                </div>
-            </div>
-
-            <h3>RESEARCH SKILLS</h3>
-            <div class="skills-grid">
-                <div class="skill-item">
-                    <h4>LLMs & Fine-tuning</h4>
-                    <ul><li>LLaVA, MiniGPT-4, Video-LLaVA</li><li>LoRA, QLoRA, Prefix-tuning</li><li>Instruction Tuning</li></ul>
-                </div>
-                <div class="skill-item">
-                    <h4>AI Agents & RAG</h4>
-                    <ul><li>LangChain, AutoGPT</li><li>AutoGen, MetaGPT</li><li>Vector DBs</li></ul>
-                </div>
-                <div class="skill-item">
-                    <h4>AI for Science</h4>
-                    <ul><li>Geometric DL (GNN/EGNN)</li><li>Diffusion & Flow-matching</li><li>Binding Affinity</li></ul>
-                </div>
-                <div class="skill-item">
-                    <h4>Embodied AI</h4>
-                    <ul><li>VLA Models (RT-2, GATO)</li><li>PyBullet, Isaac Gym, Sapien</li><li>RL Policies (PPO/SAC)</li></ul>
-                </div>
-                <div class="skill-item">
-                    <h4>Computer Vision</h4>
-                    <ul><li>SAM, YOLO, Visual Defect</li><li>Multimodal Fusion (CLIP)</li></ul>
-                </div>
-                <div class="skill-item">
-                    <h4>AI Engineering</h4>
-                    <ul><li>DeepSpeed, FSDP (Multi-GPU)</li><li>ONNX, Triton, TensorRT</li><li>INT8/FP16 Quantization</li></ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="sec-projects" class="content-section hidden">
+    <div id="page-bio" class="page-container">
         <div class="glass-panel">
-            <h2>PROJECT EXPERIENCE <span class="section-icon">02</span></h2>
+            <h2>BIOGRAPHY</h2>
+            <p>I am a Ph.D. researcher at <strong>Hong Kong Baptist University (HKBU)</strong>, supervised by <strong>Prof. Pong Chi Yuen</strong>, and currently a Visiting Scholar at <strong>Nanyang Technological University (NTU)</strong>.</p>
+            <p>My research bridges <strong>Generative AI</strong> and scientific reality. By integrating <strong>Geometric Deep Learning</strong> with <strong>Embodied Intelligence</strong>, I am developing closed-loop systems for De Novo drug design.</p>
             
-            <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">Companion Toy Robot Brain</h3>
-                    <span class="tag">Embodied AI</span>
-                </div>
-                <p>Designed an emotional interaction system for embodied robots, integrating LLMs to process multimodal inputs and generate empathetic feedback for interactive companionship.</p>
+            <h3>TIMELINE</h3>
+            <div class="timeline-item">
+                <span class="date">Sept. 2025 - Present</span>
+                <strong>Visiting Student</strong>
+                <span style="font-size:0.9rem; color:#666">Nanyang Technological University, Singapore</span>
             </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">MetaAnalysis Agent</h3>
-                    <span class="tag">LLM Agent</span>
-                </div>
-                <p>Developed an autonomous agent for automated medical literature review, capable of large-scale data extraction, synthesis, and statistical analysis assistance.</p>
+            <div class="timeline-item">
+                <span class="date">Sept. 2022 - Present</span>
+                <strong>Ph.D. Student in Computer Science</strong>
+                [cite_start]<span style="font-size:0.9rem; color:#666">Hong Kong Baptist University [cite: 1]</span>
             </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">De Novo Drug Generation Agent</h3>
-                    <span class="tag">RL & GenAI</span>
-                </div>
-                <p>Built a generative agent for molecular design, utilizing Reinforcement Learning (RL) to optimize molecular structures for multi-objective drug properties.</p>
+            <div class="timeline-item">
+                <span class="date">2023 - 2024</span>
+                <strong>Founder / Entrepreneurial Experience</strong>
+                [cite_start]<span style="font-size:0.9rem; color:#666">Embodied AI Startup (R&D Focused) [cite: 1]</span>
             </div>
-
-            <div style="margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">Protein Language Model</h3>
-                    <span class="tag">Pre-training</span>
-                </div>
-                <p>Pre-trained a large-scale Protein Language Model (PLM) to capture structural and functional features, enhancing downstream tasks in protein engineering.</p>
+            <div class="timeline-item">
+                <span class="date">2017 - 2026</span>
+                <strong>Director of STEAM Department</strong>
+                [cite_start]<span style="font-size:0.9rem; color:#666">Damuzhi Education Institution [cite: 1]</span>
             </div>
-
-            <div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">Chinese Medicine GNN</h3>
-                    <span class="tag">Graph AI</span>
-                </div>
-                <p>Implemented a Graph Neural Network (GNN) framework to model complex herb-drug interactions, utilizing knowledge graphs for safety prediction.</p>
+            <div class="timeline-item">
+                <span class="date">Sept. 2017 - June 2020</span>
+                <strong>Bachelor in Computer Science</strong>
+                [cite_start]<span style="font-size:0.9rem; color:#666">Hong Kong Baptist University [cite: 1]</span>
             </div>
         </div>
     </div>
 
-    <div id="sec-pubs" class="content-section hidden">
-        <div class="glass-panel" style="background:transparent; border:none; box-shadow:none; pointer-events:none; padding:0;">
-            <h2 style="text-shadow: 0 0 20px black; margin-bottom: 5px;">SELECTED PUBLICATIONS <span class="section-icon">04</span></h2>
-            <p style="color:var(--text-muted); font-size:0.9rem;">(Use Mouse Wheel to Scroll)</p>
-        </div>
-        </div>
-
-    <div id="sec-awards" class="content-section hidden">
-        <div class="glass-panel" style="width: 600px;">
-            <h2 style="color: var(--accent-gold);">HONORS & AWARDS <span class="section-icon">05</span></h2>
+    <div id="page-projects" class="page-container">
+        <div class="glass-panel">
+            <h2>PROJECT EXPERIENCE</h2>
             
-            <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;">
-                    <span>Excellent ICODE Coach Award</span>
-                    <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">2023, 2024, 2025</span>
-                </div>
+            <div class="timeline-item">
+                <span class="date">Embodied AI</span>
+                <strong>Companion Toy Robot Brain</strong>
+                <p style="margin-top:5px;">Designed an emotional interaction system for embodied robots, integrating LLMs to process multimodal inputs.</p>
             </div>
 
-            <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;">
-                    <span>Excellent Teaching Assistant Award</span>
-                    <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">06/2024</span>
-                </div>
+            <div class="timeline-item">
+                <span class="date">LLM Agent</span>
+                <strong>MetaAnalysis Agent</strong>
+                <p style="margin-top:5px;">Autonomous agent for automated medical literature review and large-scale data extraction.</p>
             </div>
 
-            <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;">
-                    <span>Teaching Assistant Performance Award</span>
-                    <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">06/2023</span>
-                </div>
+            <div class="timeline-item">
+                <span class="date">RL & GenAI</span>
+                <strong>De Novo Drug Generation Agent</strong>
+                <p style="margin-top:5px;">Generative agent utilizing RL to optimize molecular structures for multi-objective properties.</p>
             </div>
 
-            <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;">
-                    <span>National Olympiad in Informatics</span>
-                    <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">12/2016</span>
-                </div>
-                <div style="font-size:0.8rem; color:#888;">Provincial Level</div>
+            <div class="timeline-item">
+                <span class="date">Graph AI</span>
+                <strong>Chinese Medicine GNN</strong>
+                <p style="margin-top:5px;">GNN framework to model complex herb-drug interactions using knowledge graphs.</p>
             </div>
+        </div>
+    </div>
 
-            <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;">
-                    <span>National Youth Sci-Tech Innovation Contest</span>
-                    <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">2014-2016</span>
+    <div id="page-pubs" class="page-container">
+        <div class="header">
+            <h2>SELECTED PUBLICATIONS</h2>
+            <p class="tag" style="background:var(--accent); color:black; font-weight:bold;">SCROLL VERTICALLY</p>
+        </div>
+    </div>
+
+    <div id="page-skills" class="page-container">
+        <div class="glass-panel">
+            <h2>RESEARCH SKILLS</h2>
+            <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+                <div>
+                    <h3>LLMs & Agents</h3>
+                    <p>
+                        <span class="tag">LLaVA</span> <span class="tag">MiniGPT-4</span> <span class="tag">LoRA</span> 
+                        <span class="tag">LangChain</span> <span class="tag">AutoGPT</span> <span class="tag">RAG</span>
+                    </p>
                 </div>
-            </div>
-
-            <div style="padding: 15px 0;">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff;">
-                    <span>DI Shanghai Organizing Committee - Top 6</span>
-                    <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">11/2015</span>
+                <div>
+                    <h3>AI for Science</h3>
+                    <p>
+                        <span class="tag">Geometric DL</span> <span class="tag">GNN/EGNN</span> <span class="tag">Diffusion</span> 
+                        <span class="tag">Flow-matching</span> <span class="tag">Binding Affinity</span>
+                    </p>
+                </div>
+                <div>
+                    <h3>Embodied AI & CV</h3>
+                    <p>
+                        <span class="tag">VLA Models (RT-2)</span> <span class="tag">PyBullet</span> <span class="tag">Isaac Gym</span> 
+                        <span class="tag">RL (PPO/SAC)</span> <span class="tag">SAM</span> <span class="tag">YOLO</span>
+                    </p>
+                </div>
+                <div>
+                    <h3>Engineering</h3>
+                    <p>
+                        <span class="tag">DeepSpeed</span> <span class="tag">FSDP</span> <span class="tag">TensorRT</span> 
+                        <span class="tag">ONNX</span> <span class="tag">Multi-GPU</span>
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="sec-cv" class="content-section hidden">
+    <div id="page-awards" class="page-container">
+        <div class="glass-panel">
+            <h2 style="color:var(--accent-gold);">HONORS & AWARDS</h2>
+            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span>Excellent ICODE Coach Award</span>
+                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">2023-2025</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span>Excellent Teaching Assistant Award</span>
+                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">06/2024</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span>Teaching Assistant Performance Award</span>
+                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">06/2023</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span>National Olympiad in Informatics</span>
+                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">12/2016</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span>National Youth Innovation Contest</span>
+                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">2014-16</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-cv" class="page-container">
         <div class="glass-panel" style="text-align: center;">
-            <h2>CURRICULUM VITAE <span class="section-icon">06</span></h2>
+            <h2>CURRICULUM VITAE</h2>
             <p>For a complete list of publications, projects, and academic history.</p>
-            <a href="cv.pdf" target="_blank" class="cv-btn">DOWNLOAD PDF</a>
+            <div style="margin: 40px 0;">
+                <a href="cv.pdf" target="_blank" class="btn-primary" style="padding: 20px 50px; font-size: 1.2rem;">DOWNLOAD PDF</a>
+            </div>
+            <div style="font-size:0.9rem;">
+                <p>fengpan@comp.hkbu.edu.hk</p>
+                <p>© 2026 Feng Pan</p>
+            </div>
         </div>
     </div>
+
 
     <script>
-        // --- DATA ---
+        // --- DATA CONFIG ---
         const papers = [
-            { 
-                id: 1, title: "BindingSiteDTI", venue: "Bioinformatics 2024", 
-                img: "./paper/binding.jpg", link: "https://academic.oup.com/bioinformatics/article/40/5/btae308/7668442", color: 0x00f2ff 
-            },
-            { 
-                id: 2, title: "Surface Defects LLM", venue: "EUSIPCO 2025", 
-                img: "./paper/eusipco.jpg", link: "https://eusipco2025.org", color: 0xbd00ff 
-            },
-            { 
-                id: 3, title: "De Novo Drug Agent", venue: "CVPR 2026 (Sub)", 
-                img: "", link: "#", color: 0xff0055 
-            },
-            { 
-                id: 4, title: "Coming Soon", venue: "Protein LM", 
-                img: "", link: "#", color: 0x555555 
-            }
+            { title: "BindingSiteDTI", venue: "Bioinformatics 2024", img: "./paper/binding.jpg", link: "https://academic.oup.com/bioinformatics/article/40/5/btae308/7668442" },
+            { title: "Surface Defects LLM", venue: "EUSIPCO 2025", img: "./paper/eusipco.jpg", link: "https://eusipco2025.org" },
+            { title: "De Novo Drug Agent", venue: "CVPR 2026 (Sub)", img: "", link: "#" },
+            { title: "Protein Language Model", venue: "Coming Soon", img: "", link: "#" }
         ];
 
-        // --- SETUP ---
+        // --- 1. SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020202, 0.035);
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        scene.fog = new THREE.FogExp2(0x050508, 0.02); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0x00f2ff, 1);
-        dirLight.position.set(5, 10, 7);
-        scene.add(dirLight);
-        const purpleLight = new THREE.PointLight(0xbd00ff, 1.5, 30);
-        purpleLight.position.set(-10, 5, -10);
-        scene.add(purpleLight);
+        // --- 2. LIGHTING ---
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambLight);
+        
+        const spotLight = new THREE.SpotLight(0x00f2ff, 1);
+        spotLight.position.set(10, 20, 10);
+        scene.add(spotLight);
 
-        // --- OBJECTS ---
-        // Particles
-        const partsGeo = new THREE.BufferGeometry();
-        const partsCount = 2000;
-        const posArray = new Float32Array(partsCount * 3);
-        for(let i=0; i<partsCount*3; i++) { posArray[i] = (Math.random()-0.5) * 120; }
-        partsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const starField = new THREE.Points(partsGeo, new THREE.PointsMaterial({ size: 0.12, color: 0x555555, transparent: true, opacity: 0.6 }));
-        scene.add(starField);
+        const pinkLight = new THREE.PointLight(0xbd00ff, 1, 20);
+        pinkLight.position.set(-10, -5, 5);
+        scene.add(pinkLight);
 
-        // Scene Groups
-        const homeGroup = new THREE.Group();
-        homeGroup.position.set(0, 0, -10); // Home Background abstract
-        const brainGeo = new THREE.IcosahedronGeometry(4, 1);
-        const brainMat = new THREE.MeshStandardMaterial({ color: 0x050505, wireframe:true, transparent:true, opacity:0.1 });
-        homeGroup.add(new THREE.Mesh(brainGeo, brainMat));
-        scene.add(homeGroup);
-
-        const bioGroup = new THREE.Group(); // DNA Helix
-        bioGroup.position.set(-25, 0, -5);
-        for(let i=0; i<40; i++) {
-            const s = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00f2ff }));
-            s.position.set(Math.sin(i*0.4)*2, i*0.4 - 8, Math.cos(i*0.4)*2);
-            bioGroup.add(s);
-            const s2 = s.clone();
-            s2.material = new THREE.MeshBasicMaterial({ color: 0xbd00ff });
-            s2.position.set(Math.sin(i*0.4 + Math.PI)*2, i*0.4 - 8, Math.cos(i*0.4 + Math.PI)*2);
-            bioGroup.add(s2);
-        }
-        scene.add(bioGroup);
-
-        const projGroup = new THREE.Group(); // Construct
-        projGroup.position.set(30, -5, -5);
-        for(let i=0; i<8; i++) {
-            const b = new THREE.Mesh(new THREE.BoxGeometry(2, 0.5, 2), new THREE.MeshStandardMaterial({ color: 0x333333, metalness:0.8 }));
-            b.position.y = i * 1.5 - 5;
-            b.rotation.y = i * 0.5;
-            projGroup.add(b);
-        }
-        scene.add(projGroup);
-
-        const awardGroup = new THREE.Group(); // Halo
-        awardGroup.position.set(25, 20, -10);
-        awardGroup.add(new THREE.Mesh(new THREE.TorusGeometry(3, 0.05, 16, 100), new THREE.MeshBasicMaterial({ color: 0xffd700 })));
-        scene.add(awardGroup);
-
-        // Pubs Vertical Stack
-        const pubGroup = new THREE.Group();
-        pubGroup.position.set(0, -40, 0);
-        const pubMeshes = [];
-        const cardGap = 4;
+        // --- 3. OBJECTS MANAGER ---
+        const groups = {}; 
         const textureLoader = new THREE.TextureLoader();
-        const cardGeo = new THREE.BoxGeometry(6, 3.4, 0.2);
 
+        // A. BACKGROUND PARTICLES
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 3000;
+        const starPos = new Float32Array(starCount * 3);
+        for(let i=0; i<starCount; i++) {
+            starPos[i*3] = (Math.random()-0.5) * 100;
+            starPos[i*3+1] = (Math.random()-0.5) * 100;
+            starPos[i*3+2] = (Math.random()-0.5) * 100;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0x8892b0, size: 0.1, transparent: true });
+        const starSystem = new THREE.Points(starGeo, starMat);
+        scene.add(starSystem);
+
+        // B. SCENE GROUPS
+
+        // HOME
+        groups.home = new THREE.Group();
+        const brainGeo = new THREE.IcosahedronGeometry(3.5, 1);
+        const brainMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.15 });
+        groups.home.add(new THREE.Mesh(brainGeo, brainMat));
+        groups.home.add(new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), new THREE.MeshBasicMaterial({ color: 0x050508 })));
+        
+        // BIO (DNA - RIGHT)
+        groups.bio = new THREE.Group();
+        groups.bio.position.set(7, 0, 0); 
+        for(let i=0; i<30; i++) {
+            const y = i * 0.4 - 6;
+            const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.15), new THREE.MeshBasicMaterial({color:0x00f2ff}));
+            b1.position.set(Math.sin(i*0.5)*2, y, Math.cos(i*0.5)*2);
+            groups.bio.add(b1);
+            const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.15), new THREE.MeshBasicMaterial({color:0xbd00ff}));
+            b2.position.set(Math.sin(i*0.5+Math.PI)*2, y, Math.cos(i*0.5+Math.PI)*2);
+            groups.bio.add(b2);
+        }
+
+        // PROJECTS (Neural Matrix - LEFT)
+        groups.projects = new THREE.Group();
+        groups.projects.position.set(-7, 0, 0); 
+        const nodeGeo = new THREE.SphereGeometry(0.1);
+        const nodeMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+        const lineMat = new THREE.LineBasicMaterial({color: 0x444444, transparent:true, opacity:0.3});
+        for(let i=0; i<30; i++) {
+            const n = new THREE.Mesh(nodeGeo, nodeMat);
+            n.position.set((Math.random()-0.5)*6, (Math.random()-0.5)*8, (Math.random()-0.5)*6);
+            groups.projects.add(n);
+            if(i>0) {
+                const prev = groups.projects.children[i-1].position;
+                const geo = new THREE.BufferGeometry().setFromPoints([prev, n.position]);
+                groups.projects.add(new THREE.Line(geo, lineMat));
+            }
+        }
+
+        // PUBS (Vertical Stack - LARGER)
+        groups.pubs = new THREE.Group();
+        const pubCards = [];
+        // Increased Size: Width 9, Height 5
+        const cardGeo = new THREE.BoxGeometry(9, 5, 0.1); 
+        
         papers.forEach((p, i) => {
             const card = new THREE.Group();
-            const mesh = new THREE.Mesh(cardGeo, new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2 }));
-            const screenGeo = new THREE.PlaneGeometry(5.6, 3);
+            const mesh = new THREE.Mesh(cardGeo, new THREE.MeshStandardMaterial({color: 0x111111, roughness:0.2}));
+            
             let screenMat;
-            if (p.img) {
-                const tex = textureLoader.load(p.img);
-                screenMat = new THREE.MeshBasicMaterial({ map: tex, color: 0xffffff });
+            if(p.img) {
+                screenMat = new THREE.MeshBasicMaterial({ map: textureLoader.load(p.img) });
             } else {
-                screenMat = new THREE.MeshBasicMaterial({ color: p.color });
+                screenMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
             }
-            const screen = new THREE.Mesh(screenGeo, screenMat);
-            screen.position.set(0, 0, 0.11);
+            // Screen slightly smaller than frame
+            const screen = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 4.4), screenMat);
+            screen.position.z = 0.06;
 
-            // Label
+            // Title Label
             const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 128;
+            canvas.width = 1024; canvas.height = 200; // Higher res for bigger cards
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.fillRect(0,0,512,128);
-            ctx.fillStyle = "white"; ctx.font = 'bold 36px Arial'; ctx.fillText(p.title, 20, 50);
-            ctx.fillStyle = "#00f2ff"; ctx.font = '24px Arial'; ctx.fillText(p.venue, 20, 90);
-            const label = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 1.4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
-            label.position.set(0, -0.8, 0.12);
+            ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,1024,200);
+            ctx.fillStyle = "white"; ctx.font = "bold 50px Arial"; ctx.fillText(p.title, 40, 100);
+            const label = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.5), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas), transparent:true}));
+            label.position.set(0, -1.6, 0.07);
 
             card.add(mesh); card.add(screen); card.add(label);
-            card.position.y = -i * cardGap;
-            card.userData = { id: i, link: p.link, baseY: -i * cardGap };
-            pubGroup.add(card);
-            pubMeshes.push(card);
+            
+            const gap = 6.0; // Increased gap
+            card.position.y = -i * gap; 
+            card.userData = { baseY: -i * gap, link: p.link };
+            
+            groups.pubs.add(card);
+            pubCards.push(card);
         });
-        scene.add(pubGroup);
 
-        // --- NAVIGATION ---
-        const views = {
-            home: { pos: {x:0, y:0, z:12}, look: {x:0, y:0, z:0} },
-            bio: { pos: {x:-20, y:0, z:10}, look: {x:-25, y:0, z:-5} }, // Consolidated Bio
-            projects: { pos: {x:25, y:-5, z:12}, look: {x:30, y:-5, z:0} },
-            awards: { pos: {x:15, y:20, z:10}, look: {x:25, y:20, z:-10} },
-            pubs: { pos: {x:0, y:-40, z:10}, look: {x:0, y:-40, z:0} },
-            cv: { pos: {x:0, y:30, z:12}, look: {x:0, y:30, z:-5} },
-            skills: { pos: {x:-20, y:0, z:10}, look: {x:-25, y:0, z:-5} } // Map skills to Bio loc
-        };
-
-        let currentSection = 'home';
-        const camTarget = new THREE.Vector3(0,0,0);
-
-        function navigateTo(id) {
-            // Special handling: Skills is part of Bio visually but has its own nav for UX
-            // In this 3D layout, let's make Skills redirect to Bio's 3D position but scroll glass panel? 
-            // Simplified: Skills just goes to Bio position.
-            let targetId = id;
-            if (id === 'skills') targetId = 'bio'; // Map skills 3D view to Bio
-
-            currentSection = id;
-            const view = views[targetId];
-
-            document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-            document.getElementById('nav-'+id).classList.add('active');
-
-            document.querySelectorAll('.content-section').forEach(s => {
-                s.classList.remove('active');
-                s.classList.add('hidden');
-            });
-
-            setTimeout(() => {
-                let elId = 'sec-' + id;
-                // If clicking skills nav, show bio section but maybe scroll down?
-                // For simplicity, just show the consolidated Bio panel.
-                if(id === 'skills') elId = 'sec-bio'; 
-                
-                const el = document.getElementById(elId);
-                if(el) {
-                    el.classList.remove('hidden');
-                    el.classList.add('active');
-                }
-                
-                // Toggle hints
-                document.getElementById('scroll-hint').style.opacity = (id === 'pubs') ? 1 : 0;
-            }, 600);
-
-            gsap.to(camera.position, { x: view.pos.x, y: view.pos.y, z: view.pos.z, duration: 1.5, ease: "power2.inOut" });
-            gsap.to(camTarget, { x: view.look.x, y: view.look.y, z: view.look.z, duration: 1.5, ease: "power2.inOut", onUpdate: () => camera.lookAt(camTarget) });
+        // SKILLS (Data Cloud - RIGHT)
+        groups.skills = new THREE.Group();
+        groups.skills.position.set(7, 0, 0); 
+        const cloudGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const cloudMat = new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe:true});
+        for(let i=0; i<40; i++) {
+            const m = new THREE.Mesh(cloudGeo, cloudMat);
+            m.position.set((Math.random()-0.5)*8, (Math.random()-0.5)*10, (Math.random()-0.5)*8);
+            m.rotation.set(Math.random(), Math.random(), Math.random());
+            groups.skills.add(m);
         }
 
-        // --- INTERACTION ---
-        let scrollY = 0; let targetScrollY = 0; const maxScroll = (papers.length - 1) * cardGap;
-        window.addEventListener('wheel', (e) => {
-            if (currentSection === 'pubs') {
-                targetScrollY += e.deltaY * 0.005;
-                targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-            }
-        });
+        // AWARDS (Golden Halo - LEFT)
+        groups.awards = new THREE.Group();
+        groups.awards.position.set(-7, 0, 0);
+        const halo1 = new THREE.Mesh(new THREE.TorusGeometry(3, 0.05, 64, 100), new THREE.MeshBasicMaterial({color:0xffd700}));
+        const halo2 = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.02, 64, 100), new THREE.MeshBasicMaterial({color:0xffaa00}));
+        halo2.rotation.x = Math.PI/3;
+        groups.awards.add(halo1);
+        groups.awards.add(halo2);
 
+        // CV (Monolith - CENTER)
+        groups.cv = new THREE.Group();
+        const mono = new THREE.Mesh(new THREE.BoxGeometry(3, 6, 3), new THREE.MeshStandardMaterial({color:0x111111, metalness:0.9, roughness:0.1}));
+        const monoWire = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.BoxGeometry(3.1,6.1,3.1)), new THREE.LineBasicMaterial({color:0x00f2ff, transparent:true, opacity:0.2}));
+        groups.cv.add(mono);
+        groups.cv.add(monoWire);
+
+        // Init groups
+        for (const key in groups) {
+            scene.add(groups[key]);
+            groups[key].visible = false;
+        }
+        groups.home.visible = true;
+
+
+        // --- 4. NAVIGATION & SCROLL LOGIC ---
+        const sectionOrder = ['home', 'bio', 'projects', 'pubs', 'skills', 'awards', 'cv'];
+        let currentSceneName = 'home';
+        let isTransitioning = false;
+        let lastWheelTime = 0; // Debounce control
+        
+        // Pubs Internal Scroll Vars
+        let pubsScrollY = 0;
+        let pubsTargetY = 0;
+        const pubsGap = 6.0;
+        const pubsMaxScroll = (papers.length - 1) * pubsGap;
+
+        // --- GLOBAL SCROLL HANDLER ---
+        window.addEventListener('wheel', (e) => {
+            const now = Date.now();
+            
+            // 1. HORIZONTAL SCROLL / SWIPE -> ALWAYS SWITCH PAGE
+            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                // Throttle page switches
+                if (now - lastWheelTime < 1000) return;
+                
+                const direction = e.deltaX > 0 ? 1 : -1;
+                const currentIndex = sectionOrder.indexOf(currentSceneName);
+                const nextIndex = currentIndex + direction;
+                
+                if(nextIndex >= 0 && nextIndex < sectionOrder.length) {
+                    lastWheelTime = now;
+                    switchScene(sectionOrder[nextIndex]);
+                }
+                return;
+            }
+
+            // 2. VERTICAL SCROLL -> CONTEXT DEPENDENT
+            
+            // A. If we are in PUBS section (No HTML panel, just 3D)
+            if (currentSceneName === 'pubs') {
+                // Scroll the 3D content
+                pubsTargetY += e.deltaY * 0.02; 
+                pubsTargetY = Math.max(0, Math.min(pubsTargetY, pubsMaxScroll));
+                return;
+            }
+
+            // B. Other sections (HTML Panel exists)
+            // We do NOT preventDefault here. 
+            // The browser will naturally scroll the .glass-panel content because it has overflow-y:auto
+            // However, if the user hits the top/bottom of the panel, we might want to switch pages?
+            // For now, let's keep vertical scroll strictly for content to avoid annoying "scroll jacking".
+            // Only Horizontal Scroll switches pages.
+            
+        }, { passive: false });
+
+        function switchScene(targetName) {
+            if (currentSceneName === targetName || isTransitioning) return;
+            isTransitioning = true;
+
+            // Update Nav UI
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const idx = sectionOrder.indexOf(targetName);
+            if(document.querySelectorAll('.nav-btn')[idx]) {
+                document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+            }
+
+            // Warp Effect
+            gsap.to(window, { warpSpeed: 2, duration: 0.5 });
+
+            // Fade Out Current
+            const currentDOM = document.getElementById('page-' + currentSceneName);
+            const current3D = groups[currentSceneName];
+            
+            currentDOM.classList.remove('active');
+            
+            // 3D Out Animation
+            gsap.to(current3D.scale, { x:0, y:0, z:0, duration: 0.5, ease: "back.in(1.7)", onComplete: () => {
+                current3D.visible = false;
+                current3D.scale.set(1,1,1);
+                
+                // Switch State
+                currentSceneName = targetName;
+                const nextDOM = document.getElementById('page-' + targetName);
+                const next3D = groups[targetName];
+
+                // Prepare Next
+                next3D.visible = true;
+                next3D.scale.set(0,0,0);
+
+                // Fade In Next
+                nextDOM.classList.add('active');
+                gsap.to(next3D.scale, { x:1, y:1, z:1, duration: 0.8, ease: "back.out(1.7)" });
+
+                // End Warp
+                gsap.to(window, { warpSpeed: 0, duration: 1, delay: 0.2, onComplete: () => {
+                    isTransitioning = false;
+                }});
+            }});
+        }
+
+
+        // --- 5. INTERACTION (Raycaster) ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-        const tooltip = document.getElementById('cursor-tip');
+        const tip = document.getElementById('cursor-tip');
 
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            tooltip.style.left = (e.clientX + 15) + 'px';
-            tooltip.style.top = (e.clientY + 15) + 'px';
-            starField.rotation.y = mouse.x * 0.05;
+            
+            tip.style.left = (e.clientX + 15) + 'px';
+            tip.style.top = (e.clientY + 15) + 'px';
 
-            if(currentSection === 'pubs') {
+            if(currentSceneName === 'pubs') {
                 raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(pubMeshes.map(g => g.children[0]));
-                if(intersects.length > 0) {
-                    document.body.style.cursor = 'pointer'; tooltip.style.opacity = 1;
-                    gsap.to(intersects[0].object.parent.scale, {x:1.05, y:1.05, duration:0.3});
+                const hits = raycaster.intersectObjects(pubCards.map(c => c.children[1]));
+                if(hits.length > 0) {
+                    document.body.style.cursor = 'pointer';
+                    tip.style.opacity = 1;
+                    gsap.to(hits[0].object.parent.scale, {x:1.05, y:1.05, duration:0.3});
                 } else {
-                    document.body.style.cursor = 'default'; tooltip.style.opacity = 0;
+                    document.body.style.cursor = 'default';
+                    tip.style.opacity = 0;
+                    pubCards.forEach(c => gsap.to(c.scale, {x:1, y:1, duration:0.3}));
                 }
-            } else { tooltip.style.opacity = 0; document.body.style.cursor = 'default'; }
+            } else {
+                tip.style.opacity = 0;
+                document.body.style.cursor = 'default';
+            }
         });
 
         window.addEventListener('click', () => {
-            if(currentSection === 'pubs' && tooltip.style.opacity == 1) {
+            if(currentSceneName === 'pubs' && tip.style.opacity == 1) {
                 raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(pubMeshes.map(g => g.children[0]));
-                if(intersects.length > 0) {
-                    const link = intersects[0].object.parent.userData.link;
-                    if(link && link !== '#') window.open(link, '_blank');
+                const hits = raycaster.intersectObjects(pubCards.map(c => c.children[1]));
+                if(hits.length > 0) {
+                    const link = hits[0].object.parent.userData.link;
+                    if(link && link!=='#') window.open(link, '_blank');
                 }
             }
         });
 
-        // --- ANIMATION ---
+
+        // --- 6. ANIMATION LOOP ---
         const clock = new THREE.Clock();
+        
         function animate() {
             requestAnimationFrame(animate);
-            const t = clock.getElapsedTime();
+            const time = clock.getElapsedTime();
+
+            // Starfield Warp
+            const positions = starSystem.geometry.attributes.position.array;
+            for(let i=0; i<starCount; i++) {
+                let z = positions[i*3+2];
+                z += 0.1 + (window.warpSpeed || 0) * 2; 
+                if(z > 50) z = -100; 
+                positions[i*3+2] = z;
+            }
+            starSystem.geometry.attributes.position.needsUpdate = true;
+
+            // Idle Animations
+            if(groups.home.visible) groups.home.rotation.y = time * 0.1;
             
-            homeGroup.rotation.y = t * 0.05;
-            bioGroup.rotation.y = t * 0.2;
-            projGroup.children.forEach((b, i) => { b.rotation.y = t * 0.5 + i * 0.2; });
-            awardGroup.rotation.y = t * 0.3; awardGroup.rotation.x = Math.sin(t)*0.2;
+            if(groups.bio.visible) {
+                groups.bio.rotation.y = time * 0.2;
+                groups.bio.position.y = Math.sin(time)*0.5; 
+            }
+            
+            if(groups.skills.visible) groups.skills.rotation.y = -time * 0.1;
+            
+            if(groups.projects.visible) {
+                groups.projects.rotation.y = time * 0.05;
+                groups.projects.children.forEach((c,i) => {
+                    if(c.isMesh) c.position.y += Math.sin(time*2 + i)*0.002;
+                });
+            }
 
-            // Pubs Scroll
-            scrollY += (targetScrollY - scrollY) * 0.1;
-            pubMeshes.forEach((card, i) => {
-                let finalY = card.userData.baseY + scrollY;
-                card.position.y = finalY;
-                const dist = Math.abs(finalY);
-                let scale = Math.max(0.85, 1 - dist * 0.1);
-                if (document.body.style.cursor !== 'pointer') card.scale.set(scale, scale, scale);
-                const opacity = Math.max(0.3, 1 - dist * 0.4);
-                card.children[0].material.color.setHSL(0, 0, opacity * 0.1);
-                card.position.x = Math.sin(t + i) * 0.1;
-            });
+            if(groups.awards.visible) {
+                groups.awards.rotation.z = Math.sin(time)*0.1;
+                groups.awards.children[0].rotation.y = time * 0.5;
+            }
 
-            camera.lookAt(camTarget);
+            if(groups.cv.visible) {
+                groups.cv.rotation.y = time * 0.2;
+            }
+
+            // Pubs Scroll Logic
+            if(groups.pubs.visible) {
+                pubsScrollY += (pubsTargetY - pubsScrollY) * 0.1;
+                pubCards.forEach((c, i) => {
+                    let finalY = c.userData.baseY + pubsScrollY;
+                    c.position.y = finalY;
+                    
+                    // Visual Fade Logic
+                    const dist = Math.abs(finalY);
+                    const scale = Math.max(0.8, 1 - dist * 0.08); // Less aggressive scaling for bigger cards
+                    const opacity = Math.max(0.2, 1 - dist * 0.2);
+                    
+                    if(document.body.style.cursor !== 'pointer') c.scale.set(scale, scale, scale);
+                    
+                    // Push back slightly when far
+                    c.position.z = -dist * 0.3; 
+                });
+            }
+
             renderer.render(scene, camera);
         }
 
@@ -636,11 +739,13 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // Start
         setTimeout(() => {
             document.getElementById('loader').style.opacity = 0;
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
             animate();
         }, 1000);
+
     </script>
 </body>
 </html>

@@ -5,25 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feng Pan | Ph.D. Student | HKBU</title>
     <style>
+        /* 1. 定义基础变量 (默认浅色模式) */
         :root {
             --primary-text: #1d1d1f;
             --secondary-text: #6e6e73;
-            --accent-color: #0071e3; 
+            --accent-color: #0071e3;
+            --body-bg: #f5f5f7; /* 新增背景变量 */
+            
+            /* 浅色玻璃效果 */
             --glass-bg: rgba(255, 255, 255, 0.78); 
             --glass-border: rgba(255, 255, 255, 0.8);
             --nav-glass: rgba(255, 255, 255, 0.6);
             --card-hover-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            
+            /* Pub Card 背景 */
+            --pub-card-bg: rgba(255, 255, 255, 0.5);
+            --pub-card-hover: rgba(255, 255, 255, 0.9);
+            --pub-border: rgba(255, 255, 255, 0.6);
+        }
+
+        /* 2. 深色模式适配 (当系统检测到深色主题时自动应用) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-text: #f5f5f7;
+                --secondary-text: #a1a1a6;
+                --accent-color: #2997ff; /* 深色模式下蓝色需要更亮一点 */
+                --body-bg: #000000; /* 深邃黑背景 */
+
+                /* 深色玻璃效果 (改为黑色半透明) */
+                --glass-bg: rgba(28, 28, 30, 0.75); 
+                --glass-border: rgba(255, 255, 255, 0.15); /* 边框改为淡淡的白色 */
+                --nav-glass: rgba(28, 28, 30, 0.7);
+                --card-hover-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
+
+                /* Pub Card 背景 */
+                --pub-card-bg: rgba(60, 60, 60, 0.4);
+                --pub-card-hover: rgba(80, 80, 80, 0.6);
+                --pub-border: rgba(255, 255, 255, 0.1);
+            }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
-        body { background-color: #f5f5f7; color: var(--primary-text); line-height: 1.6; background-attachment: fixed; }
+        
+        /* 使用变量控制背景色 */
+        body { background-color: var(--body-bg); color: var(--primary-text); line-height: 1.6; background-attachment: fixed; transition: background-color 0.3s ease, color 0.3s ease; }
         
         /* Navigation */
         nav { 
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 1100px; padding: 12px 30px; 
             background: var(--nav-glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
             border-radius: 25px; z-index: 1000; display: flex; justify-content: space-between; align-items: center; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid var(--glass-border);
         }
         .nav-logo { font-weight: 700; font-size: 1.1rem; color: var(--primary-text); text-decoration: none; display: flex; align-items: center; }
         .nav-logo-img { width: 32px; height: 32px; border-radius: 50%; margin-right: 12px; object-fit: cover; }
@@ -37,7 +69,8 @@
             background-image: url('./image/BG.png'); 
             background-size: cover; background-position: center; position: relative;
         }
-        .hero-banner::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, #f5f5f7, transparent); }
+        /* 关键修改：渐变遮罩颜色使用 var(--body-bg) 而不是写死的 #f5f5f7 */
+        .hero-banner::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, var(--body-bg), transparent); }
 
         .hero-content { width: 92%; max-width: 1000px; display: flex; align-items: center; gap: 60px; position: relative; z-index: 1; }
         .hero-profile-img { width: 250px; height: 250px; object-fit: cover; border-radius: 50%; border: 5px solid #ffffff; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
@@ -55,21 +88,22 @@
 
         .contact-links { margin-top: 25px; display: flex; gap: 15px; }
         .contact-links a { 
-            color: var(--primary-text); text-decoration: none; font-weight: 600; font-size: 0.9rem;
+            color: #1d1d1f; /* 按钮内部文字保持深色因为按钮背景是白 */
+            text-decoration: none; font-weight: 600; font-size: 0.9rem;
             background: rgba(255, 255, 255, 0.9); padding: 10px 22px; border-radius: 30px;
             backdrop-filter: blur(10px); transition: 0.3s; border: 1px solid rgba(255,255,255,0.5);
         }
         .contact-links a:hover { transform: translateY(-3px); background: #ffffff; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
 
         .container { width: 92%; max-width: 1000px; margin: 0 auto; padding-bottom: 80px; }
-        .section-title { font-size: 1.8rem; margin: 50px 0 25px; display: flex; align-items: center; font-weight: 700; color: #1d1d1f; }
+        .section-title { font-size: 1.8rem; margin: 50px 0 25px; display: flex; align-items: center; font-weight: 700; color: var(--primary-text); }
         .section-title::before { content: ''; width: 6px; height: 32px; background: var(--accent-color); margin-right: 18px; border-radius: 4px; }
         
         /* Glass Card Base */
         .glass-card { 
             background: var(--glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
             border: 1px solid var(--glass-border); border-radius: 25px; padding: 40px; 
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.04); margin-bottom: 30px; transition: transform 0.3s ease;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.04); margin-bottom: 30px; transition: transform 0.3s ease, background 0.3s ease;
         }
 
         /* News List */
@@ -77,26 +111,27 @@
         .news-date { font-weight: 700; color: var(--accent-color); min-width: 90px; }
 
         /* Timeline Experience */
-        .timeline { position: relative; padding-left: 30px; margin-left: 10px; border-left: 2px solid rgba(0, 113, 227, 0.2); }
+        .timeline { position: relative; padding-left: 30px; margin-left: 10px; border-left: 2px solid var(--accent-color); opacity: 0.8; }
         .timeline-item { position: relative; margin-bottom: 40px; }
         .timeline-item:last-child { margin-bottom: 0; }
         .timeline-item::before { 
             content: ''; position: absolute; left: -41px; top: 5px; width: 20px; height: 20px; 
-            background: #fff; border: 4px solid var(--accent-color); border-radius: 50%; z-index: 2; 
+            background: var(--body-bg); /* 圆点中心跟随背景色 */
+            border: 4px solid var(--accent-color); border-radius: 50%; z-index: 2; 
         }
         .timeline-date { font-weight: 700; color: var(--accent-color); font-size: 0.95rem; margin-bottom: 5px; }
         .timeline-content h4 { font-size: 1.15rem; color: var(--primary-text); margin: 0 0 5px 0; }
         .timeline-content p { color: var(--secondary-text); font-size: 0.95rem; margin: 0; }
 
-        /* Publications (PC Style) */
+        /* Publications */
         .pub-list { display: flex; flex-direction: column; gap: 25px; }
         .pub-card { 
             display: flex; gap: 25px; padding: 20px; 
-            background: rgba(255, 255, 255, 0.5); 
-            border: 1px solid rgba(255, 255, 255, 0.6); 
+            background: var(--pub-card-bg); /* 使用变量 */
+            border: 1px solid var(--pub-border); /* 使用变量 */
             border-radius: 16px; transition: all 0.2s ease; align-items: flex-start; 
         }
-        .pub-card:hover { background: rgba(255, 255, 255, 0.9); box-shadow: var(--card-hover-shadow); transform: translateY(-2px); }
+        .pub-card:hover { background: var(--pub-card-hover); box-shadow: var(--card-hover-shadow); transform: translateY(-2px); }
         
         .pub-cover { 
             flex-shrink: 0; width: 160px; height: 110px; 
@@ -113,7 +148,7 @@
         .pub-links { margin-top: 10px; }
         .pub-links a { 
             font-size: 0.85rem; color: var(--primary-text); text-decoration: none; 
-            margin-right: 10px; border: 1px solid #ccc; padding: 3px 10px; border-radius: 5px; transition: 0.2s; 
+            margin-right: 10px; border: 1px solid var(--secondary-text); padding: 3px 10px; border-radius: 5px; transition: 0.2s; 
         }
         .pub-links a:hover { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
 
@@ -122,7 +157,8 @@
         .skill-card { display: flex; flex-direction: column; height: 100%; padding: 30px; }
         .skill-card h3 { margin-bottom: 15px; color: var(--accent-color); font-size: 1.1rem; border-bottom: 2px solid rgba(0,113,227,0.1); padding-bottom: 8px; }
         .skill-list { list-style: none; padding: 0; flex-grow: 1; }
-        .skill-list li { margin-bottom: 8px; padding-left: 18px; position: relative; font-size: 0.9rem; line-height: 1.4; color: #333; }
+        /* 关键修改：移除硬编码的 #333 颜色 */
+        .skill-list li { margin-bottom: 8px; padding-left: 18px; position: relative; font-size: 0.9rem; line-height: 1.4; color: var(--primary-text); }
         .skill-list li::before { content: '•'; color: var(--accent-color); font-weight: bold; position: absolute; left: 0; }
 
         /* Project List */
@@ -130,12 +166,12 @@
         .project-list strong { color: var(--accent-color); font-size: 1.05rem; }
 
         /* Awards List */
-        .award-item { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .award-item { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(128,128,128,0.2); }
         .award-item:last-child { border-bottom: none; margin-bottom: 0; }
-        .award-name { font-weight: 600; color: #333; }
+        .award-name { font-weight: 600; color: var(--primary-text); } /* 修复硬编码颜色 */
         .award-date { color: var(--secondary-text); font-size: 0.9rem; text-align: right; min-width: 100px; }
 
-        /* --- CV Button Style (From PC.html) --- */
+        /* --- CV Button Style --- */
         .cv-glass-btn {
             display: flex;
             justify-content: center;
@@ -145,10 +181,10 @@
             font-size: 1.3rem;
             font-weight: 700;
             color: var(--accent-color);
-            background: rgba(255, 255, 255, 0.5);
+            background: var(--glass-bg); /* 使用变量 */
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--glass-border);
             border-radius: 30px;
             text-decoration: none;
             transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -156,9 +192,9 @@
         }
         .cv-glass-btn:hover { 
             transform: translateY(-4px); 
-            background: rgba(255, 255, 255, 0.9); 
+            background: var(--pub-card-hover); /* 鼠标悬停变亮/变暗 */
             box-shadow: 0 25px 50px rgba(0, 113, 227, 0.2); 
-            color: #005bea; 
+            color: var(--accent-color); 
         }
 
         footer { text-align: center; padding: 60px; color: var(--secondary-text); font-size: 0.95rem; }

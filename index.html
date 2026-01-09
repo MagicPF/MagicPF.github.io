@@ -3,749 +3,550 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feng Pan | AI Scientist & Ph.D. Student</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <title>Feng Pan | Ph.D. Student | HKBU</title>
     <style>
-        /* --- 1. 核心视觉系统 --- */
+        /* 1. 定义基础变量 (默认浅色模式) */
         :root {
-            --accent: #00f2ff;       /* 科技青 */
-            --accent-glow: rgba(0, 242, 255, 0.4);
-            --bg-dark: #050508;      /* 深空黑 */
-            --glass-panel: rgba(10, 10, 12, 0.75);
-            --border-light: rgba(255, 255, 255, 0.1);
-            --text-main: #ffffff;
-            --text-muted: #8892b0;
+            --primary-text: #1d1d1f;
+            --secondary-text: #6e6e73;
+            --accent-color: #0071e3;
+            --body-bg: #f5f5f7;
+            
+            /* 浅色玻璃效果 */
+            --glass-bg: rgba(255, 255, 255, 0.78); 
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --nav-glass: rgba(255, 255, 255, 0.6);
+            --card-hover-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            
+            /* Pub Card 背景 */
+            --pub-card-bg: rgba(255, 255, 255, 0.5);
+            --pub-card-hover: rgba(255, 255, 255, 0.9);
+            --pub-border: rgba(255, 255, 255, 0.6);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* 2. 深色模式适配 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-text: #f5f5f7;
+                --secondary-text: #a1a1a6;
+                --accent-color: #2997ff;
+                --body-bg: #000000;
+
+                /* 深色玻璃效果 */
+                --glass-bg: rgba(28, 28, 30, 0.75); 
+                --glass-border: rgba(255, 255, 255, 0.15);
+                --nav-glass: rgba(28, 28, 30, 0.7);
+                --card-hover-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
+
+                /* Pub Card 背景 */
+                --pub-card-bg: rgba(60, 60, 60, 0.4);
+                --pub-card-hover: rgba(80, 80, 80, 0.6);
+                --pub-border: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
         
-        body { 
-            background: var(--bg-dark); 
-            color: var(--text-main); 
-            font-family: 'Inter', sans-serif; 
-            overflow: hidden; /* 隐藏 body 滚动条，由内部面板或JS接管 */
+        body { background-color: var(--body-bg); color: var(--primary-text); line-height: 1.6; background-attachment: fixed; transition: background-color 0.3s ease, color 0.3s ease; }
+        
+        /* Navigation */
+        nav { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+            width: 95%; /* 增加宽度占比 */
+            max-width: 1600px; /* 【修改】更宽的导航栏 */
+            padding: 12px 40px; 
+            background: var(--nav-glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
+            border-radius: 25px; z-index: 1000; display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid var(--glass-border);
         }
+        .nav-logo { font-weight: 700; font-size: 1.2rem; color: var(--primary-text); text-decoration: none; display: flex; align-items: center; }
+        .nav-logo-img { width: 32px; height: 32px; border-radius: 50%; margin-right: 12px; object-fit: cover; }
+        .nav-links { display: flex; gap: 25px; list-style: none; }
+        .nav-links a { text-decoration: none; color: var(--primary-text); font-weight: 500; font-size: 0.95rem; transition: 0.3s; }
+        .nav-links a:hover { color: var(--accent-color); }
 
-        canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; outline: none; }
+        /* Hero Banner */
+        .hero-banner { 
+            width: 100%; padding: 180px 4% 100px; display: flex; justify-content: center; 
+            background-image: url('./image/BG.png'); 
+            background-size: cover; background-position: center; position: relative;
+        }
+        .hero-banner::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, var(--body-bg), transparent); }
 
-        /* --- 2. 导航栏 (顶部悬浮) --- */
-        nav {
-            position: fixed; top: 0; left: 0; width: 100%; height: 80px; z-index: 100;
-            display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            pointer-events: none;
+        /* 【核心修改】Hero Content 布局 */
+        .hero-content { 
+            width: 95%; 
+            max-width: 1600px; /* 【修改】增加最大宽度 */
+            display: flex; 
+            align-items: center; 
+            justify-content: center; /* 保持居中 */
+            gap: 100px; /* 【修改】增加图片和文字的间距 */
+            position: relative; z-index: 1; 
+        }
+        .hero-profile-img { 
+            width: 320px; /* 【修改】头像稍微放大一点以匹配大布局 */
+            height: 320px; 
+            object-fit: cover; border-radius: 50%; border: 6px solid #ffffff; box-shadow: 0 30px 80px rgba(0,0,0,0.25); 
+            flex-shrink: 0; /* 防止头像被挤压 */
         }
         
-        .nav-inner {
-            pointer-events: auto;
-            display: flex; gap: 8px; padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-light);
-            border-radius: 100px;
-            backdrop-filter: blur(10px);
+        .hero-name { 
+            font-size: 5.5rem; /* 【修改】字体加大 */
+            font-weight: 800; 
+            letter-spacing: -0.02em; 
+            line-height: 1.1; 
+            padding-bottom: 0.2em; 
+            margin-bottom: 5px; 
+            
+            background-image: linear-gradient(125deg, #00c6fb 0%, #005bea 25%, #6a11cb 50%, #ff4d4d 75%, #f9cb28 100%); 
+            background-size: 300% auto; 
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; 
+            color: transparent; 
+            filter: drop-shadow(0 10px 20px rgba(0, 91, 234, 0.2)); 
+            animation: fluidColors 3s ease-in-out infinite alternate; 
+            
+            -webkit-text-stroke: 1.5px #ffffff;
         }
 
-        .nav-btn {
-            background: transparent; border: none; color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
-            padding: 8px 16px; border-radius: 20px; cursor: pointer;
-            transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px;
-        }
-        .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
-        .nav-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent-glow); }
-
-        /* --- 3. 内容布局框架 --- */
-        .page-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; transform: scale(0.95);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+        @keyframes fluidColors {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
         }
         
-        .page-container.active { 
-            opacity: 1; transform: scale(1); pointer-events: none; 
+        .hero-title { font-size: 1.8rem; font-weight: 600; margin-top: 15px; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .hero-dept { color: rgba(255, 255, 255, 0.95); font-size: 1.2rem; margin-top: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+        /* Contact Buttons */
+        .contact-links { margin-top: 30px; display: flex; gap: 20px; }
+        .contact-links a { 
+            color: var(--primary-text); 
+            text-decoration: none; font-weight: 600; font-size: 1rem;
+            background: var(--glass-bg); 
+            border: 1px solid var(--glass-border);
+            padding: 14px 32px; 
+            border-radius: 40px;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            transition: all 0.3s ease; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .contact-links a:hover { 
+            transform: translateY(-3px); 
+            background: var(--pub-card-hover); 
+            box-shadow: var(--card-hover-shadow); 
+            color: var(--accent-color); 
+            border-color: var(--accent-color);
         }
 
-        /* 玻璃面板 */
-        .glass-panel {
-            pointer-events: auto; /* 允许面板内部的点击和滚动 */
-            background: var(--glass-panel);
-            border: 1px solid var(--border-light);
+        /* 【核心修改】主容器宽度 */
+        .container { 
+            width: 92%; 
+            max-width: 1400px; /* 【修改】增加内容区域的最大宽度 */
+            margin: 0 auto; 
+            padding-bottom: 100px; 
+        }
+        .section-title { font-size: 2rem; margin: 60px 0 30px; display: flex; align-items: center; font-weight: 700; color: var(--primary-text); }
+        .section-title::before { content: ''; width: 6px; height: 36px; background: var(--accent-color); margin-right: 20px; border-radius: 4px; }
+        
+        /* Glass Card Base */
+        .glass-card { 
+            background: var(--glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
+            border: 1px solid var(--glass-border); border-radius: 30px; padding: 50px; /* 增加内边距 */
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.04); margin-bottom: 40px; transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        /* News List */
+        .news-item { margin-bottom: 15px; display: flex; gap: 20px; list-style: none; font-size: 1.05rem; }
+        .news-date { font-weight: 700; color: var(--accent-color); min-width: 100px; }
+
+        /* Timeline Experience */
+        .timeline { position: relative; padding-left: 40px; margin-left: 10px; border-left: 3px solid var(--accent-color); opacity: 0.9; }
+        .timeline-item { position: relative; margin-bottom: 50px; }
+        .timeline-item:last-child { margin-bottom: 0; }
+        .timeline-item::before { 
+            content: ''; position: absolute; left: -52px; top: 5px; width: 22px; height: 22px; 
+            background: var(--body-bg); 
+            border: 5px solid var(--accent-color); border-radius: 50%; z-index: 2; 
+        }
+        .timeline-date { font-weight: 700; color: var(--accent-color); font-size: 1rem; margin-bottom: 8px; display: inline-block; }
+        .timeline-content h4 { font-size: 1.25rem; color: var(--primary-text); margin: 0 0 8px 0; }
+        .timeline-content p { color: var(--secondary-text); font-size: 1.05rem; margin: 0; }
+
+        /* Publications */
+        .pub-list { display: flex; flex-direction: column; gap: 30px; }
+        .pub-card { 
+            display: flex; gap: 35px; padding: 30px; 
+            background: var(--pub-card-bg); 
+            border: 1px solid var(--pub-border); 
+            border-radius: 20px; transition: all 0.2s ease; align-items: flex-start; 
+        }
+        .pub-card:hover { background: var(--pub-card-hover); box-shadow: var(--card-hover-shadow); transform: translateY(-3px); }
+        
+        .pub-cover { 
+            flex-shrink: 0; width: 200px; height: 140px; /* 图片改大一点 */
+            border-radius: 12px; overflow: hidden; background-color: #e0e0e0; 
+            border: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: center; 
+        }
+        .pub-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+        .pub-card:hover .pub-cover img { transform: scale(1.05); }
+        
+        .pub-details { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        .pub-title { font-size: 1.25rem; font-weight: 700; color: var(--primary-text); margin-bottom: 10px; line-height: 1.4; }
+        .pub-authors { font-size: 1.05rem; color: var(--secondary-text); line-height: 1.6; margin-bottom: 8px; }
+        .pub-venue { font-weight: 600; color: var(--accent-color); font-size: 1rem; font-style: italic; }
+        .pub-links { margin-top: 15px; }
+        .pub-links a { 
+            font-size: 0.9rem; color: var(--primary-text); text-decoration: none; 
+            margin-right: 12px; border: 1px solid var(--secondary-text); padding: 4px 12px; border-radius: 6px; transition: 0.2s; 
+        }
+        .pub-links a:hover { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+
+        /* Skills 6-Card Grid */
+        .skills-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .skill-card { display: flex; flex-direction: column; height: 100%; padding: 40px; }
+        .skill-card h3 { margin-bottom: 20px; color: var(--accent-color); font-size: 1.2rem; border-bottom: 2px solid rgba(0,113,227,0.1); padding-bottom: 10px; }
+        .skill-list { list-style: none; padding: 0; flex-grow: 1; }
+        .skill-list li { margin-bottom: 10px; padding-left: 20px; position: relative; font-size: 1rem; line-height: 1.5; color: var(--primary-text); }
+        .skill-list li::before { content: '•'; color: var(--accent-color); font-weight: bold; position: absolute; left: 0; font-size: 1.2em; }
+
+        /* Project List */
+        .project-list li { margin-bottom: 20px; font-size: 1.05rem; }
+        .project-list strong { color: var(--accent-color); font-size: 1.1rem; }
+
+        /* Awards List */
+        .award-item { display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(128,128,128,0.2); font-size: 1.05rem; }
+        .award-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .award-name { font-weight: 600; color: var(--primary-text); }
+        .award-date { color: var(--secondary-text); text-align: right; min-width: 120px; }
+
+        /* --- CV Button Style --- */
+        .cv-glass-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 35px; 
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            background: var(--glass-bg); 
             backdrop-filter: blur(20px);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            width: 500px; 
-            max-width: 90%;
-            max-height: 85vh; /* 限制高度以允许内部滚动 */
-            overflow-y: auto; /* 关键：允许垂直滚动 */
-            position: absolute;
-            overscroll-behavior: contain; /* 防止滚动溢出触发页面级滚动 */
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 35px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 15px 35px rgba(0, 113, 227, 0.1);
+        }
+        .cv-glass-btn:hover { 
+            transform: translateY(-4px); 
+            background: var(--pub-card-hover); 
+            box-shadow: 0 30px 60px rgba(0, 113, 227, 0.25); 
+            color: var(--accent-color); 
         }
 
-        /* 滚动条美化 */
-        .glass-panel::-webkit-scrollbar { width: 4px; }
-        .glass-panel::-webkit-scrollbar-track { background: transparent; }
-        .glass-panel::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+        footer { text-align: center; padding: 80px; color: var(--secondary-text); font-size: 1rem; }
 
-        /* --- 4. 页面布局配置 --- */
-
-        /* HOME */
-        #page-home .home-content {
-            pointer-events: auto;
-            text-align: left; display: flex; align-items: center; gap: 40px;
-            background: rgba(0,0,0,0.6); padding: 40px; border-radius: 30px;
-            border: 1px solid var(--border-light); backdrop-filter: blur(10px);
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .skills-container { grid-template-columns: repeat(2, 1fr); }
+            .hero-name { font-size: 4rem; }
         }
-        #page-home img { width: 180px; height: 180px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
-
-        /* BIO: 左侧 */
-        #page-bio .glass-panel { left: 8%; top: 50%; transform: translateY(-50%); width: 550px; }
-
-        /* PROJECTS: 右侧 */
-        #page-projects .glass-panel { right: 8%; top: 50%; transform: translateY(-50%); }
-
-        /* SKILLS: 左侧 */
-        #page-skills .glass-panel { left: 8%; top: 50%; transform: translateY(-50%); width: 600px; }
-
-        /* PUBS: 居中 (无面板，只有3D) */
-        #page-pubs { flex-direction: column; justify-content: flex-start; padding-top: 100px; }
-        #page-pubs .header { pointer-events: auto; text-align: center; margin-bottom: 20px; }
-
-        /* AWARDS: 右侧 */
-        #page-awards .glass-panel { right: 8%; top: 50%; transform: translateY(-50%); }
-
-        /* CV: 居中 */
-        #page-cv .glass-panel { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
-
-        /* --- 5. 文字排版 --- */
-        h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 10px; color: #fff; letter-spacing: -1px; }
-        h2 { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        h2::before { content: '//'; opacity: 0.5; }
-        
-        h3 { font-size: 1.1rem; color: #fff; margin: 25px 0 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
-        p { font-size: 0.95rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 15px; }
-        
-        .tag { 
-            display: inline-block; padding: 4px 10px; margin: 0 5px 5px 0;
-            border: 1px solid var(--accent); color: var(--accent); 
-            font-family: 'JetBrains Mono'; font-size: 0.7rem; border-radius: 4px;
-            background: rgba(0, 242, 255, 0.05);
-        }
-
-        .btn-primary {
-            display: inline-block; padding: 12px 30px; 
-            background: var(--accent); color: #000; font-weight: 700; 
-            text-decoration: none; border-radius: 50px; font-family: 'JetBrains Mono';
-            transition: 0.3s; margin-top: 10px;
-        }
-        .btn-primary:hover { box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.05); }
-
-        /* Timeline Items */
-        .timeline-item { border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px; margin-bottom: 25px; position: relative; }
-        .timeline-item::before { content: ''; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
-        .timeline-item strong { color: #fff; display: block; margin-bottom: 2px; }
-        .date { font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--accent); display: block; margin-bottom: 4px; opacity: 0.9; }
-
-        /* Loading */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.8s;
-        }
-        .loader-text { font-family: 'JetBrains Mono'; color: var(--accent); letter-spacing: 5px; margin-top: 20px; }
-        
-        /* Cursor Tip */
-        #cursor-tip {
-            position: fixed; pointer-events: none; z-index: 200; opacity: 0;
-            background: rgba(0,0,0,0.8); border: 1px solid var(--accent); color: var(--accent);
-            padding: 5px 10px; font-size: 10px; font-family: 'JetBrains Mono';
-            transform: translate(15px, 15px); transition: opacity 0.2s;
-        }
-        
-        /* Interaction Hint */
-        #interaction-hint {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 50;
-            color: var(--accent); font-family: 'JetBrains Mono'; font-size: 0.7rem; letter-spacing: 2px;
-            opacity: 0.7; pointer-events: none;
+        @media (max-width: 850px) {
+            .hero-content { flex-direction: column; text-align: center; gap: 40px; }
+            .hero-name { font-size: 3.5rem; }
+            .hero-profile-img { width: 250px; height: 250px; }
+            .skills-container { grid-template-columns: 1fr; }
+            .pub-card { flex-direction: column; }
+            .pub-cover { width: 100%; height: 200px; }
+            .nav-links { display: none; }
+            .contact-links { justify-content: center; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div style="width: 50px; height: 50px; border: 2px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        <div class="loader-text">SYSTEM BOOT</div>
-    </div>
-    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
-
-    <div id="cursor-tip">CLICK</div>
-    <div id="interaction-hint">HORIZONTAL SCROLL TO SWITCH PAGES</div>
-
     <nav>
-        <div class="nav-inner">
-            <button class="nav-btn active" onclick="switchScene('home')">Home</button>
-            <button class="nav-btn" onclick="switchScene('bio')">Bio</button>
-            <button class="nav-btn" onclick="switchScene('projects')">Projects</button>
-            <button class="nav-btn" onclick="switchScene('pubs')">Pubs</button>
-            <button class="nav-btn" onclick="switchScene('skills')">Skills</button>
-            <button class="nav-btn" onclick="switchScene('awards')">Awards</button>
-            <button class="nav-btn" onclick="switchScene('cv')">CV</button>
-        </div>
+        <a href="#" class="nav-logo">
+            <img src="image/FengPan.jpg" alt="Logo" class="nav-logo-img" onerror="this.style.display='none'">
+            Feng Pan
+        </a>
+        <ul class="nav-links">
+            <li><a href="#bio">Biography</a></li>
+            <li><a href="#news">News</a></li>
+            <li><a href="#experience">Experience</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#publications">Publications</a></li>
+            <li><a href="#skills">Skills</a></li>
+            <li><a href="#awards">Awards</a></li>
+            <li><a href="#cv">CV</a></li>
+        </ul>
     </nav>
 
-    <div id="page-home" class="page-container active">
-        <div class="home-content">
-            <div style="flex: 1;">
-                <p style="color:var(--accent); font-family:'JetBrains Mono'; margin-bottom:10px;">// AI SCIENTIST</p>
-                <h1>FENG PAN <span style="font-weight:300; font-size:2.5rem;">潘丰</span></h1>
-                <p style="font-size: 1.2rem; color: #fff;">Ph.D. Student @ HKBU | Visiting @ NTU</p>
-                <p style="margin-top: 20px;">
-                    Revolutionizing <strong>Biopharmaceuticals</strong> with <strong>LLMs</strong> & <strong>Autonomous Agents</strong>.
+    <header class="hero-banner">
+        <div class="hero-content">
+            <img src="image/FengPan.jpg" alt="Feng Pan" class="hero-profile-img">
+            <div class="hero-text">
+                <h1 class="hero-name">Feng Pan 潘丰</h1>
+                <p class="hero-title">Ph.D. Student in Computer Science</p>
+                <p class="hero-dept">Department of Computer Science, Hong Kong Baptist University</p>
+                <div class="contact-links">
+                    <a href="mailto:fengpan@comp.hkbu.edu.hk">Email</a>
+                    <a href="https://github.com/MagicPF" target="_blank">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <section id="bio">
+            <h2 class="section-title">Biography</h2>
+            <div class="glass-card">
+                <p>
+                    I am a Ph.D. researcher at <strong>Hong Kong Baptist University (HKBU)</strong>, supervised by <strong>Prof. Pong Chi Yuen</strong>, and currently a Visiting Scholar at <strong>Nanyang Technological University (NTU)</strong>.
                 </p>
-                <div style="margin-top: 30px;">
-                    <a href="mailto:fengpan@comp.hkbu.edu.hk" class="btn-primary" style="margin-right:15px; background: transparent; border: 1px solid white; color: white;">EMAIL</a>
-                    <a href="https://github.com/MagicPF" target="_blank" class="btn-primary">GITHUB</a>
+                <br>
+                <p>
+                    Standing at the forefront of <strong>Large Language Models (LLMs)</strong> and <strong>Autonomous Agents</strong>, my research is dedicated to revolutionizing <strong>Biopharmaceuticals</strong>. I aim to build the next generation of <strong>"AI Scientists"</strong>—intelligent agents capable of reasoning through complex biological mechanisms to accelerate <em>De Novo</em> drug design and protein engineering.
+                </p>
+                <br>
+                <p>
+                    My work bridges the gap between generative AI and scientific reality. By integrating <strong>Geometric Deep Learning</strong> with <strong>Embodied Intelligence</strong>, I am developing closed-loop systems where AI agents not only design novel molecules but also perceive and interact with the physical world for verification. With a background as an <strong>AI Startup Founder</strong>, I possess the full-stack engineering capability to translate these visionary theories into robust, high-performance systems.
+                </p>
+            </div>
+        </section>
+
+        <section id="news">
+            <h2 class="section-title">News</h2>
+            <div class="glass-card">
+                <ul style="padding:0; margin:0">
+                    <li class="news-item">
+                        <span class="news-date" style="color:#d9534f; font-weight:800;">[Coming Soon]</span>
+                        <span><strong>Multimodal Protein Language Model</strong> coming soon.</span>
+                    </li>
+                    <li class="news-item">
+                        <span class="news-date">[11/2025]</span>
+                        <span><strong>De Novo Drug Design Agent</strong> submitted to <strong>CVPR 2026</strong>.</span>
+                    </li>
+                    <li class="news-item">
+                        <span class="news-date">[09/2025]</span>
+                        <span>One paper accepted by <strong>EUSIPCO 2025</strong> in Geneva, Switzerland.</span>
+                    </li>
+                    <li class="news-item">
+                        <span class="news-date">[09/2025]</span>
+                        <span>Started my journey as a Visiting Student at <strong>Nanyang Technological University (NTU)</strong>.</span>
+                    </li>
+                    <li class="news-item">
+                        <span class="news-date">[06/2024]</span>
+                        <span>Honored with the <strong>Excellent Teaching Assistant Performance Award</strong>.</span>
+                    </li>
+                    <li class="news-item">
+                        <span class="news-date">[05/2024]</span>
+                        <span>"BindingSiteDTI" published in <strong>Bioinformatics</strong>.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="experience">
+            <h2 class="section-title">Experience</h2>
+            <div class="glass-card">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">Sept. 2025 - Jan. 2026</div>
+                        <div class="timeline-content">
+                            <h4>Visiting Student</h4>
+                            <p>Nanyang Technological University, Singapore</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">Sept. 2022 - Present</div>
+                        <div class="timeline-content">
+                            <h4>Ph.D. Student</h4>
+                            <p>Hong Kong Baptist University, Hong Kong (Supervisor: Prof. Pong Chi Yuen)</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2023 - 2024</div>
+                        <div class="timeline-content">
+                            <h4>Founder / Entrepreneurial Experience</h4>
+                            <p>Embodied AI Startup (Focused on embodied intelligence R&D)</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2017 - 2026</div>
+                        <div class="timeline-content">
+                            <h4>Director of STEAM Department</h4>
+                            <p>Damuzhi Education Institution</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">Sept. 2017 - June 2021</div>
+                        <div class="timeline-content">
+                            <h4>Bachelor in Computer Science</h4>
+                            <p>Hong Kong Baptist University, Hong Kong</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <img src="./image/FengPan.jpg" alt="Profile" onerror="this.style.display='none'">
-        </div>
-    </div>
+        </section>
 
-    <div id="page-bio" class="page-container">
-        <div class="glass-panel">
-            <h2>BIOGRAPHY</h2>
-            <p>I am a Ph.D. researcher at <strong>Hong Kong Baptist University (HKBU)</strong>, supervised by <strong>Prof. Pong Chi Yuen</strong>, and currently a Visiting Scholar at <strong>Nanyang Technological University (NTU)</strong>.</p>
-            <p>My research bridges <strong>Generative AI</strong> and scientific reality. By integrating <strong>Geometric Deep Learning</strong> with <strong>Embodied Intelligence</strong>, I am developing closed-loop systems for De Novo drug design.</p>
-            
-            <h3>TIMELINE</h3>
-            <div class="timeline-item">
-                <span class="date">Sept. 2025 - Present</span>
-                <strong>Visiting Student</strong>
-                <span style="font-size:0.9rem; color:#666">Nanyang Technological University, Singapore</span>
+        <section id="projects">
+            <h2 class="section-title">Project Experience</h2>
+            <div class="glass-card">
+                <ul class="skill-list project-list">
+                    <li>
+                        <strong>Companion Toy Robot Brain Algorithm Design:</strong> Designed an emotional interaction system for embodied robots, integrating LLMs to process multimodal inputs and generate empathetic feedback for interactive companionship.
+                    </li>
+                    <li>
+                        <strong>MetaAnalysis Agent:</strong> Developed an autonomous agent for automated medical literature review, capable of large-scale data extraction, synthesis, and statistical analysis assistance.
+                    </li>
+                    <li>
+                        <strong>De Novo Drug Generation Agent:</strong> Built a generative agent for molecular design, utilizing Reinforcement Learning (RL) to optimize molecular structures for multi-objective drug properties.
+                    </li>
+                    <li>
+                        <strong>Protein Language Model:</strong> Pre-trained a large-scale Protein Language Model (PLM) to capture structural and functional features, enhancing downstream tasks in protein engineering.
+                    </li>
+                    <li>
+                        <strong>Chinese Medicine Interaction Prediction:</strong> Implemented a Graph Neural Network (GNN) framework to model complex herb-drug interactions, utilizing knowledge graphs for safety prediction.
+                    </li>
+                </ul>
             </div>
-            <div class="timeline-item">
-                <span class="date">Sept. 2022 - Present</span>
-                <strong>Ph.D. Student in Computer Science</strong>
-                [cite_start]<span style="font-size:0.9rem; color:#666">Hong Kong Baptist University [cite: 1]</span>
-            </div>
-            <div class="timeline-item">
-                <span class="date">2023 - 2024</span>
-                <strong>Founder / Entrepreneurial Experience</strong>
-                [cite_start]<span style="font-size:0.9rem; color:#666">Embodied AI Startup (R&D Focused) [cite: 1]</span>
-            </div>
-            <div class="timeline-item">
-                <span class="date">2017 - 2026</span>
-                <strong>Director of STEAM Department</strong>
-                [cite_start]<span style="font-size:0.9rem; color:#666">Damuzhi Education Institution [cite: 1]</span>
-            </div>
-            <div class="timeline-item">
-                <span class="date">Sept. 2017 - June 2020</span>
-                <strong>Bachelor in Computer Science</strong>
-                [cite_start]<span style="font-size:0.9rem; color:#666">Hong Kong Baptist University [cite: 1]</span>
-            </div>
-        </div>
-    </div>
+        </section>
 
-    <div id="page-projects" class="page-container">
-        <div class="glass-panel">
-            <h2>PROJECT EXPERIENCE</h2>
-            
-            <div class="timeline-item">
-                <span class="date">Embodied AI</span>
-                <strong>Companion Toy Robot Brain</strong>
-                <p style="margin-top:5px;">Designed an emotional interaction system for embodied robots, integrating LLMs to process multimodal inputs.</p>
-            </div>
-
-            <div class="timeline-item">
-                <span class="date">LLM Agent</span>
-                <strong>MetaAnalysis Agent</strong>
-                <p style="margin-top:5px;">Autonomous agent for automated medical literature review and large-scale data extraction.</p>
-            </div>
-
-            <div class="timeline-item">
-                <span class="date">RL & GenAI</span>
-                <strong>De Novo Drug Generation Agent</strong>
-                <p style="margin-top:5px;">Generative agent utilizing RL to optimize molecular structures for multi-objective properties.</p>
-            </div>
-
-            <div class="timeline-item">
-                <span class="date">Graph AI</span>
-                <strong>Chinese Medicine GNN</strong>
-                <p style="margin-top:5px;">GNN framework to model complex herb-drug interactions using knowledge graphs.</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="page-pubs" class="page-container">
-        <div class="header">
-            <h2>SELECTED PUBLICATIONS</h2>
-            <p class="tag" style="background:var(--accent); color:black; font-weight:bold;">SCROLL VERTICALLY</p>
-        </div>
-    </div>
-
-    <div id="page-skills" class="page-container">
-        <div class="glass-panel">
-            <h2>RESEARCH SKILLS</h2>
-            <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
-                <div>
-                    <h3>LLMs & Agents</h3>
-                    <p>
-                        <span class="tag">LLaVA</span> <span class="tag">MiniGPT-4</span> <span class="tag">LoRA</span> 
-                        <span class="tag">LangChain</span> <span class="tag">AutoGPT</span> <span class="tag">RAG</span>
-                    </p>
+        <section id="publications">
+            <h2 class="section-title">Selected Publications</h2>
+            <div class="pub-list">
+                
+                <div class="pub-card">
+                    <div class="pub-cover">
+                        <img src="paper/binding.jpg" alt="BindingSiteDTI" onerror="this.src='https://via.placeholder.com/200x140?text=Paper+Cover'">
+                    </div>
+                    <div class="pub-details">
+                        <div class="pub-title">BindingSiteDTI: Differential-scale Binding Site Modelling for Drug-Target Interaction Prediction</div>
+                        <div class="pub-authors"><strong>Feng Pan</strong>, Chong Yin, Si-Qi Liu, Tao Huang, Zhaoxiang Bian, and Pong Chi Yuen</div>
+                        <div class="pub-venue">Bioinformatics, 2024</div>
+                        <div class="pub-links">
+                            <a href="https://academic.oup.com/bioinformatics/article/40/5/btae308/7668442">Paper</a>
+                            <a href="https://github.com/MagicPF/BindingSiteDTI">Code</a>
+                        </div>
+                    </div>
                 </div>
-                <div>
+
+                <div class="pub-card">
+                    <div class="pub-cover">
+                        <img src="paper/eusipco.jpg" alt="EUSIPCO" onerror="this.src='https://via.placeholder.com/200x140?text=Paper+Cover'">
+                    </div>
+                    <div class="pub-details">
+                        <div class="pub-title">A Two-Stage Multi-Modal LLM Fine-Tuning Framework for Analyzing Building Surface Defects</div>
+                        <div class="pub-authors">Gengyang Xu, <strong>Feng Pan</strong>, and Pong C. Yuen</div>
+                        <div class="pub-venue">Proceedings of the 33rd European Signal Processing Conference (EUSIPCO), 2025</div>
+                        <div class="pub-links">
+                            <a href="https://eusipco2025.org/wp-content/uploads/pdfs/0000706.pdf">Paper</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="skills">
+            <h2 class="section-title">Research Skills</h2>
+            <div class="skills-container">
+                <div class="glass-card skill-card">
+                    <h3>LLMs & Fine-tuning</h3>
+                    <ul class="skill-list">
+                        <li>MLLM fine-tuning: Proficient with LLaVA, MiniGPT-4, and Video-LLaVA architectures.</li>
+                        <li>Adaptation Techniques: Expert in LoRA, QLoRA, and Prefix-tuning for efficient training.</li>
+                        <li>Instruction Tuning: Designing robust prompt-based datasets for domain-specific alignment.</li>
+                    </ul>
+                </div>
+                <div class="glass-card skill-card">
+                    <h3>AI Agents & RAG</h3>
+                    <ul class="skill-list">
+                        <li>Autonomous Frameworks: Building complex agents using LangChain and AutoGPT.</li>
+                        <li>RAG Architectures: Implementing vector databases for external knowledge retrieval.</li>
+                        <li>Multi-Agent Systems: Coordinating system collaboration via AutoGen and MetaGPT.</li>
+                    </ul>
+                </div>
+                <div class="glass-card skill-card">
                     <h3>AI for Science</h3>
-                    <p>
-                        <span class="tag">Geometric DL</span> <span class="tag">GNN/EGNN</span> <span class="tag">Diffusion</span> 
-                        <span class="tag">Flow-matching</span> <span class="tag">Binding Affinity</span>
-                    </p>
+                    <ul class="skill-list">
+                        <li>GNN Modeling: Geometric Deep Learning for molecular graphs and protein-ligand structures.</li>
+                        <li>Generative Models: Conditioned molecular generation using Diffusion and Flow-matching.</li>
+                        <li>Binding Affinity: Predicting interactions using Equivariant Neural Networks (EGNN).</li>
+                    </ul>
                 </div>
-                <div>
-                    <h3>Embodied AI & CV</h3>
-                    <p>
-                        <span class="tag">VLA Models (RT-2)</span> <span class="tag">PyBullet</span> <span class="tag">Isaac Gym</span> 
-                        <span class="tag">RL (PPO/SAC)</span> <span class="tag">SAM</span> <span class="tag">YOLO</span>
-                    </p>
+                <div class="glass-card skill-card">
+                    <h3>Embodied AI</h3>
+                    <ul class="skill-list">
+                        <li>VLA Models: Deep understanding of Vision-Language-Action models (e.g., RT-2, GATO).</li>
+                        <li>Physics Simulation: Proficiency in PyBullet, Isaac Gym, and Sapien for Sim-to-Real transfer.</li>
+                        <li>Control Policies: Reinforcement Learning (PPO/SAC) based robotic manipulation.</li>
+                    </ul>
                 </div>
-                <div>
-                    <h3>Engineering</h3>
-                    <p>
-                        <span class="tag">DeepSpeed</span> <span class="tag">FSDP</span> <span class="tag">TensorRT</span> 
-                        <span class="tag">ONNX</span> <span class="tag">Multi-GPU</span>
-                    </p>
+                <div class="glass-card skill-card">
+                    <h3>Computer Vision</h3>
+                    <ul class="skill-list">
+                        <li>Visual Recognition: Analyzing surface defects using Vision-Language fine-tuning.</li>
+                        <li>Segmentation & Detection: Mastery of SAM (Segment Anything) and YOLO variants.</li>
+                        <li>Multimodal Fusion: Integrating visual encoders (CLIP/SigLIP) with LLM backbones.</li>
+                    </ul>
+                </div>
+                <div class="glass-card skill-card">
+                    <h3>AI Engineering</h3>
+                    <ul class="skill-list">
+                        <li>Distributed Training: Scaling models on multi-GPU clusters using DeepSpeed and FSDP.</li>
+                        <li>Inference Engines: High-throughput deployment with ONNX Runtime and Triton Server.</li>
+                        <li>Model Optimization: Specialized in INT8/FP16 quantization and pruning via TensorRT.</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div id="page-awards" class="page-container">
-        <div class="glass-panel">
-            <h2 style="color:var(--accent-gold);">HONORS & AWARDS</h2>
-            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <span>Excellent ICODE Coach Award</span>
-                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">2023-2025</span>
+        <section id="awards">
+            <h2 class="section-title">Awards</h2>
+            <div class="glass-card">
+                <div class="award-item">
+                    <span class="award-name">Excellent ICODE Coach Award</span>
+                    <span class="award-date">2023, 2024, 2025</span>
+                </div>
+                <div class="award-item">
+                    <span class="award-name">Excellent Teaching Assistant Performance Award</span>
+                    <span class="award-date">06/2024</span>
+                </div>
+                <div class="award-item">
+                    <span class="award-name">Teaching Assistant Performance Award</span>
+                    <span class="award-date">06/2023</span>
+                </div>
+                <div class="award-item">
+                    <span class="award-name">National Olympiad in Informatics (Provinces)</span>
+                    <span class="award-date">12/2016</span>
+                </div>
+                <div class="award-item">
+                    <span class="award-name">National Youth Science and Technology Innovation Contest</span>
+                    <span class="award-date">2014, 2015, 2016</span>
+                </div>
+                <div class="award-item">
+                    <span class="award-name">DI Shanghai Organizing Committee - Top 6</span>
+                    <span class="award-date">11/2015</span>
+                </div>
             </div>
-            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <span>Excellent Teaching Assistant Award</span>
-                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">06/2024</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <span>Teaching Assistant Performance Award</span>
-                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">06/2023</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <span>National Olympiad in Informatics</span>
-                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">12/2016</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <span>National Youth Innovation Contest</span>
-                <span style="font-family:'JetBrains Mono'; color:var(--accent-gold);">2014-16</span>
-            </div>
-        </div>
-    </div>
+        </section>
 
-    <div id="page-cv" class="page-container">
-        <div class="glass-panel" style="text-align: center;">
-            <h2>CURRICULUM VITAE</h2>
-            <p>For a complete list of publications, projects, and academic history.</p>
-            <div style="margin: 40px 0;">
-                <a href="cv.pdf" target="_blank" class="btn-primary" style="padding: 20px 50px; font-size: 1.2rem;">DOWNLOAD PDF</a>
-            </div>
-            <div style="font-size:0.9rem;">
-                <p>fengpan@comp.hkbu.edu.hk</p>
-                <p>© 2026 Feng Pan</p>
-            </div>
-        </div>
-    </div>
+        <section id="cv">
+            <h2 class="section-title">Curriculum Vitae</h2>
+            <a href="cv.pdf" class="cv-glass-btn" target="_blank">
+                Download CV (PDF)
+            </a>
+        </section>
 
+    </main>
 
-    <script>
-        // --- DATA CONFIG ---
-        const papers = [
-            { title: "BindingSiteDTI", venue: "Bioinformatics 2024", img: "./paper/binding.jpg", link: "https://academic.oup.com/bioinformatics/article/40/5/btae308/7668442" },
-            { title: "Surface Defects LLM", venue: "EUSIPCO 2025", img: "./paper/eusipco.jpg", link: "https://eusipco2025.org" },
-            { title: "De Novo Drug Agent", venue: "CVPR 2026 (Sub)", img: "", link: "#" },
-            { title: "Protein Language Model", venue: "Coming Soon", img: "", link: "#" }
-        ];
+    <footer>
+        <p>© 2026 Feng Pan | Last updated: Jan 2026</p>
+        <p>Built by Feng Pan</p>
+    </footer>
 
-        // --- 1. SCENE SETUP ---
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050508, 0.02); 
-
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.body.appendChild(renderer.domElement);
-
-        // --- 2. LIGHTING ---
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambLight);
-        
-        const spotLight = new THREE.SpotLight(0x00f2ff, 1);
-        spotLight.position.set(10, 20, 10);
-        scene.add(spotLight);
-
-        const pinkLight = new THREE.PointLight(0xbd00ff, 1, 20);
-        pinkLight.position.set(-10, -5, 5);
-        scene.add(pinkLight);
-
-        // --- 3. OBJECTS MANAGER ---
-        const groups = {}; 
-        const textureLoader = new THREE.TextureLoader();
-
-        // A. BACKGROUND PARTICLES
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 3000;
-        const starPos = new Float32Array(starCount * 3);
-        for(let i=0; i<starCount; i++) {
-            starPos[i*3] = (Math.random()-0.5) * 100;
-            starPos[i*3+1] = (Math.random()-0.5) * 100;
-            starPos[i*3+2] = (Math.random()-0.5) * 100;
-        }
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0x8892b0, size: 0.1, transparent: true });
-        const starSystem = new THREE.Points(starGeo, starMat);
-        scene.add(starSystem);
-
-        // B. SCENE GROUPS
-
-        // HOME
-        groups.home = new THREE.Group();
-        const brainGeo = new THREE.IcosahedronGeometry(3.5, 1);
-        const brainMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.15 });
-        groups.home.add(new THREE.Mesh(brainGeo, brainMat));
-        groups.home.add(new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), new THREE.MeshBasicMaterial({ color: 0x050508 })));
-        
-        // BIO (DNA - RIGHT)
-        groups.bio = new THREE.Group();
-        groups.bio.position.set(7, 0, 0); 
-        for(let i=0; i<30; i++) {
-            const y = i * 0.4 - 6;
-            const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.15), new THREE.MeshBasicMaterial({color:0x00f2ff}));
-            b1.position.set(Math.sin(i*0.5)*2, y, Math.cos(i*0.5)*2);
-            groups.bio.add(b1);
-            const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.15), new THREE.MeshBasicMaterial({color:0xbd00ff}));
-            b2.position.set(Math.sin(i*0.5+Math.PI)*2, y, Math.cos(i*0.5+Math.PI)*2);
-            groups.bio.add(b2);
-        }
-
-        // PROJECTS (Neural Matrix - LEFT)
-        groups.projects = new THREE.Group();
-        groups.projects.position.set(-7, 0, 0); 
-        const nodeGeo = new THREE.SphereGeometry(0.1);
-        const nodeMat = new THREE.MeshBasicMaterial({color: 0xffffff});
-        const lineMat = new THREE.LineBasicMaterial({color: 0x444444, transparent:true, opacity:0.3});
-        for(let i=0; i<30; i++) {
-            const n = new THREE.Mesh(nodeGeo, nodeMat);
-            n.position.set((Math.random()-0.5)*6, (Math.random()-0.5)*8, (Math.random()-0.5)*6);
-            groups.projects.add(n);
-            if(i>0) {
-                const prev = groups.projects.children[i-1].position;
-                const geo = new THREE.BufferGeometry().setFromPoints([prev, n.position]);
-                groups.projects.add(new THREE.Line(geo, lineMat));
-            }
-        }
-
-        // PUBS (Vertical Stack - LARGER)
-        groups.pubs = new THREE.Group();
-        const pubCards = [];
-        // Increased Size: Width 9, Height 5
-        const cardGeo = new THREE.BoxGeometry(9, 5, 0.1); 
-        
-        papers.forEach((p, i) => {
-            const card = new THREE.Group();
-            const mesh = new THREE.Mesh(cardGeo, new THREE.MeshStandardMaterial({color: 0x111111, roughness:0.2}));
-            
-            let screenMat;
-            if(p.img) {
-                screenMat = new THREE.MeshBasicMaterial({ map: textureLoader.load(p.img) });
-            } else {
-                screenMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
-            }
-            // Screen slightly smaller than frame
-            const screen = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 4.4), screenMat);
-            screen.position.z = 0.06;
-
-            // Title Label
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024; canvas.height = 200; // Higher res for bigger cards
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,1024,200);
-            ctx.fillStyle = "white"; ctx.font = "bold 50px Arial"; ctx.fillText(p.title, 40, 100);
-            const label = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.5), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas), transparent:true}));
-            label.position.set(0, -1.6, 0.07);
-
-            card.add(mesh); card.add(screen); card.add(label);
-            
-            const gap = 6.0; // Increased gap
-            card.position.y = -i * gap; 
-            card.userData = { baseY: -i * gap, link: p.link };
-            
-            groups.pubs.add(card);
-            pubCards.push(card);
-        });
-
-        // SKILLS (Data Cloud - RIGHT)
-        groups.skills = new THREE.Group();
-        groups.skills.position.set(7, 0, 0); 
-        const cloudGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const cloudMat = new THREE.MeshBasicMaterial({color: 0x00f2ff, wireframe:true});
-        for(let i=0; i<40; i++) {
-            const m = new THREE.Mesh(cloudGeo, cloudMat);
-            m.position.set((Math.random()-0.5)*8, (Math.random()-0.5)*10, (Math.random()-0.5)*8);
-            m.rotation.set(Math.random(), Math.random(), Math.random());
-            groups.skills.add(m);
-        }
-
-        // AWARDS (Golden Halo - LEFT)
-        groups.awards = new THREE.Group();
-        groups.awards.position.set(-7, 0, 0);
-        const halo1 = new THREE.Mesh(new THREE.TorusGeometry(3, 0.05, 64, 100), new THREE.MeshBasicMaterial({color:0xffd700}));
-        const halo2 = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.02, 64, 100), new THREE.MeshBasicMaterial({color:0xffaa00}));
-        halo2.rotation.x = Math.PI/3;
-        groups.awards.add(halo1);
-        groups.awards.add(halo2);
-
-        // CV (Monolith - CENTER)
-        groups.cv = new THREE.Group();
-        const mono = new THREE.Mesh(new THREE.BoxGeometry(3, 6, 3), new THREE.MeshStandardMaterial({color:0x111111, metalness:0.9, roughness:0.1}));
-        const monoWire = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.BoxGeometry(3.1,6.1,3.1)), new THREE.LineBasicMaterial({color:0x00f2ff, transparent:true, opacity:0.2}));
-        groups.cv.add(mono);
-        groups.cv.add(monoWire);
-
-        // Init groups
-        for (const key in groups) {
-            scene.add(groups[key]);
-            groups[key].visible = false;
-        }
-        groups.home.visible = true;
-
-
-        // --- 4. NAVIGATION & SCROLL LOGIC ---
-        const sectionOrder = ['home', 'bio', 'projects', 'pubs', 'skills', 'awards', 'cv'];
-        let currentSceneName = 'home';
-        let isTransitioning = false;
-        let lastWheelTime = 0; // Debounce control
-        
-        // Pubs Internal Scroll Vars
-        let pubsScrollY = 0;
-        let pubsTargetY = 0;
-        const pubsGap = 6.0;
-        const pubsMaxScroll = (papers.length - 1) * pubsGap;
-
-        // --- GLOBAL SCROLL HANDLER ---
-        window.addEventListener('wheel', (e) => {
-            const now = Date.now();
-            
-            // 1. HORIZONTAL SCROLL / SWIPE -> ALWAYS SWITCH PAGE
-            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-                // Throttle page switches
-                if (now - lastWheelTime < 1000) return;
-                
-                const direction = e.deltaX > 0 ? 1 : -1;
-                const currentIndex = sectionOrder.indexOf(currentSceneName);
-                const nextIndex = currentIndex + direction;
-                
-                if(nextIndex >= 0 && nextIndex < sectionOrder.length) {
-                    lastWheelTime = now;
-                    switchScene(sectionOrder[nextIndex]);
-                }
-                return;
-            }
-
-            // 2. VERTICAL SCROLL -> CONTEXT DEPENDENT
-            
-            // A. If we are in PUBS section (No HTML panel, just 3D)
-            if (currentSceneName === 'pubs') {
-                // Scroll the 3D content
-                pubsTargetY += e.deltaY * 0.02; 
-                pubsTargetY = Math.max(0, Math.min(pubsTargetY, pubsMaxScroll));
-                return;
-            }
-
-            // B. Other sections (HTML Panel exists)
-            // We do NOT preventDefault here. 
-            // The browser will naturally scroll the .glass-panel content because it has overflow-y:auto
-            // However, if the user hits the top/bottom of the panel, we might want to switch pages?
-            // For now, let's keep vertical scroll strictly for content to avoid annoying "scroll jacking".
-            // Only Horizontal Scroll switches pages.
-            
-        }, { passive: false });
-
-        function switchScene(targetName) {
-            if (currentSceneName === targetName || isTransitioning) return;
-            isTransitioning = true;
-
-            // Update Nav UI
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const idx = sectionOrder.indexOf(targetName);
-            if(document.querySelectorAll('.nav-btn')[idx]) {
-                document.querySelectorAll('.nav-btn')[idx].classList.add('active');
-            }
-
-            // Warp Effect
-            gsap.to(window, { warpSpeed: 2, duration: 0.5 });
-
-            // Fade Out Current
-            const currentDOM = document.getElementById('page-' + currentSceneName);
-            const current3D = groups[currentSceneName];
-            
-            currentDOM.classList.remove('active');
-            
-            // 3D Out Animation
-            gsap.to(current3D.scale, { x:0, y:0, z:0, duration: 0.5, ease: "back.in(1.7)", onComplete: () => {
-                current3D.visible = false;
-                current3D.scale.set(1,1,1);
-                
-                // Switch State
-                currentSceneName = targetName;
-                const nextDOM = document.getElementById('page-' + targetName);
-                const next3D = groups[targetName];
-
-                // Prepare Next
-                next3D.visible = true;
-                next3D.scale.set(0,0,0);
-
-                // Fade In Next
-                nextDOM.classList.add('active');
-                gsap.to(next3D.scale, { x:1, y:1, z:1, duration: 0.8, ease: "back.out(1.7)" });
-
-                // End Warp
-                gsap.to(window, { warpSpeed: 0, duration: 1, delay: 0.2, onComplete: () => {
-                    isTransitioning = false;
-                }});
-            }});
-        }
-
-
-        // --- 5. INTERACTION (Raycaster) ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        const tip = document.getElementById('cursor-tip');
-
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            
-            tip.style.left = (e.clientX + 15) + 'px';
-            tip.style.top = (e.clientY + 15) + 'px';
-
-            if(currentSceneName === 'pubs') {
-                raycaster.setFromCamera(mouse, camera);
-                const hits = raycaster.intersectObjects(pubCards.map(c => c.children[1]));
-                if(hits.length > 0) {
-                    document.body.style.cursor = 'pointer';
-                    tip.style.opacity = 1;
-                    gsap.to(hits[0].object.parent.scale, {x:1.05, y:1.05, duration:0.3});
-                } else {
-                    document.body.style.cursor = 'default';
-                    tip.style.opacity = 0;
-                    pubCards.forEach(c => gsap.to(c.scale, {x:1, y:1, duration:0.3}));
-                }
-            } else {
-                tip.style.opacity = 0;
-                document.body.style.cursor = 'default';
-            }
-        });
-
-        window.addEventListener('click', () => {
-            if(currentSceneName === 'pubs' && tip.style.opacity == 1) {
-                raycaster.setFromCamera(mouse, camera);
-                const hits = raycaster.intersectObjects(pubCards.map(c => c.children[1]));
-                if(hits.length > 0) {
-                    const link = hits[0].object.parent.userData.link;
-                    if(link && link!=='#') window.open(link, '_blank');
-                }
-            }
-        });
-
-
-        // --- 6. ANIMATION LOOP ---
-        const clock = new THREE.Clock();
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            // Starfield Warp
-            const positions = starSystem.geometry.attributes.position.array;
-            for(let i=0; i<starCount; i++) {
-                let z = positions[i*3+2];
-                z += 0.1 + (window.warpSpeed || 0) * 2; 
-                if(z > 50) z = -100; 
-                positions[i*3+2] = z;
-            }
-            starSystem.geometry.attributes.position.needsUpdate = true;
-
-            // Idle Animations
-            if(groups.home.visible) groups.home.rotation.y = time * 0.1;
-            
-            if(groups.bio.visible) {
-                groups.bio.rotation.y = time * 0.2;
-                groups.bio.position.y = Math.sin(time)*0.5; 
-            }
-            
-            if(groups.skills.visible) groups.skills.rotation.y = -time * 0.1;
-            
-            if(groups.projects.visible) {
-                groups.projects.rotation.y = time * 0.05;
-                groups.projects.children.forEach((c,i) => {
-                    if(c.isMesh) c.position.y += Math.sin(time*2 + i)*0.002;
-                });
-            }
-
-            if(groups.awards.visible) {
-                groups.awards.rotation.z = Math.sin(time)*0.1;
-                groups.awards.children[0].rotation.y = time * 0.5;
-            }
-
-            if(groups.cv.visible) {
-                groups.cv.rotation.y = time * 0.2;
-            }
-
-            // Pubs Scroll Logic
-            if(groups.pubs.visible) {
-                pubsScrollY += (pubsTargetY - pubsScrollY) * 0.1;
-                pubCards.forEach((c, i) => {
-                    let finalY = c.userData.baseY + pubsScrollY;
-                    c.position.y = finalY;
-                    
-                    // Visual Fade Logic
-                    const dist = Math.abs(finalY);
-                    const scale = Math.max(0.8, 1 - dist * 0.08); // Less aggressive scaling for bigger cards
-                    const opacity = Math.max(0.2, 1 - dist * 0.2);
-                    
-                    if(document.body.style.cursor !== 'pointer') c.scale.set(scale, scale, scale);
-                    
-                    // Push back slightly when far
-                    c.position.z = -dist * 0.3; 
-                });
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Start
-        setTimeout(() => {
-            document.getElementById('loader').style.opacity = 0;
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
-            animate();
-        }, 1000);
-
-    </script>
 </body>
 </html>
